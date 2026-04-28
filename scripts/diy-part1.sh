@@ -9,8 +9,8 @@ echo ">>> [diy-part1] 克隆第三方软件包..."
 # OpenClash (vernesong 官方唯一权威源)
 git clone --depth=1 https://github.com/vernesong/OpenClash.git package/OpenClash
 
-# ddns-go LuCI 界面
-git clone --depth=1 https://github.com/sirpdboy/luci-app-ddns-go.git package/luci-app-ddns-go
+# ddns-go LuCI 界面 (v6.9.4，v6.16.x 要求 Go 1.25 与 OpenWrt 24.10 不兼容)
+git clone --depth=1 -b v6.9.4 https://github.com/sirpdboy/luci-app-ddns-go.git package/luci-app-ddns-go
 
 # Advanced Plus
 git clone --depth=1 https://github.com/sirpdboy/luci-app-advancedplus.git package/luci-app-advancedplus
