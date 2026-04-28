@@ -61,8 +61,28 @@ CONFIG_PACKAGE_<pkgname>=y    # 添加
 # CONFIG_PACKAGE_<pkgname> is not set  # 排除
 ```
 
+## 常用操作
+
+**手动触发构建:**
+```bash
+gh workflow run build.yml --repo lqqk7/Tutu_GW
+```
+
+**查看构建日志:**
+```bash
+gh run list --repo lqqk7/Tutu_GW --limit 5
+gh run view <run-id> --log
+```
+
+**升级 OpenWrt 版本:** 修改 `build.yml` 中的 `REPO_BRANCH`（如 `openwrt-24.10` → `openwrt-25.12`），同时验证第三方插件 Makefile 兼容性。
+
 ## 添加新第三方插件
 
 1. 在 `scripts/diy-part1.sh` 末尾添加 `git clone` 命令
 2. 在 `config/.config` 添加对应 `CONFIG_PACKAGE_` 行
 3. 提交，等下次 workflow 触发
+
+## 注意事项
+
+- `files/etc/uci-defaults/99-tutu-defaults` 由 OpenWrt 在**首次启动时执行一次后自动删除**，刷机后的固件里不会保留此文件，属正常行为。
+- 如 `diy-part1.sh` 中某个 clone 失败（网络或仓库失效），整个构建会中止。监控 Actions 日志可快速定位哪一步出错。
