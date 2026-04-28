@@ -24,6 +24,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/share/boost /usr/share/swift /usr/local/.ghcup \
+            /usr/lib/jvm /etc/mysql /etc/php
+          sudo apt-get clean
+          docker rmi $(docker images -q) 2>/dev/null || true
+          df -h
+
       - name: Initialize build environment
         env:
           DEBIAN_FRONTEND: noninteractive
@@ -75,7 +84,10 @@ jobs:
         run: |
           cd openwrt
           echo "Building with $(nproc) cores"
-          make -j$(nproc) || make -j1 V=s 2>&1 | tee build.log | grep -E "^make.*(Error|error)" | head -30
+          if ! make -j$(nproc); then
+            echo "::error::Parallel build failed, retrying with single thread for verbose output"
+            make -j1 V=s
+          fi
 
       - name: Collect artifacts
         run: |
@@ -91,6 +103,7 @@ jobs:
           tag_name: v${{ env.BUILD_DATE }}
           name: "Tutu_GW v${{ env.BUILD_DATE }}"
           files: firmware/*
+          fail_on_unmatched_files: true
           body: |
             ## Tutu_GW OpenWrt x86_64
 
