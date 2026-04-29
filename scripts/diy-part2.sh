@@ -5,6 +5,7 @@
 set -e
 
 echo ">>> [diy-part2] 复制自定义文件..."
-cp -r "$GITHUB_WORKSPACE/files/." ./
+mkdir -p files
+cp -r "$GITHUB_WORKSPACE/files/." ./files/
 
 echo ">>> [diy-part2] 完成"

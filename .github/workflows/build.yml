@@ -15,15 +15,13 @@ env:
   DIY_P1_SH: scripts/diy-part1.sh
   DIY_P2_SH: scripts/diy-part2.sh
   TZ: Asia/Shanghai
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
     runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Free disk space
         run: |
@@ -103,7 +101,7 @@ jobs:
           echo "BUILD_DATE=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ env.BUILD_DATE }}
           name: "Tutu_GW v${{ env.BUILD_DATE }}"
