@@ -18,10 +18,15 @@ git clone --depth=1 https://github.com/sirpdboy/luci-app-advancedplus.git packag
 # Autoupdate (固件自动更新，指向本仓库 releases)
 git clone --depth=1 https://github.com/soapmancn/luci-app-autoupdate.git package/luci-app-autoupdate
 
-# TurboAcc (chenmozhijin fork，支持 firewall4/nftables)
+# TurboAcc LuCI 界面 (chenmozhijin fork，支持 firewall4/nftables)
 git clone --depth=1 -b luci https://github.com/chenmozhijin/turboacc.git package/turboacc
+# kmod-nft-fullcone (turboacc 依赖，来自 package 分支)
+git clone --depth=1 -b package https://github.com/chenmozhijin/turboacc.git /tmp/turboacc-pkg
+cp -r /tmp/turboacc-pkg/nft-fullcone package/nft-fullcone
+rm -rf /tmp/turboacc-pkg
 
-# vlmcsd KMS Server (openwrt-develop 活跃 fork，cokebar 原版已归档)
+# vlmcsd KMS Server 二进制包 + LuCI 界面 (openwrt-develop fork，cokebar 原版已归档)
+git clone --depth=1 https://github.com/openwrt-develop/openwrt-vlmcsd.git package/openwrt-vlmcsd
 git clone --depth=1 https://github.com/openwrt-develop/luci-app-vlmcsd.git package/luci-app-vlmcsd
 
 echo ">>> [diy-part1] 完成"

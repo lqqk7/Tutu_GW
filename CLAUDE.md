@@ -38,6 +38,7 @@ files/etc/uci-defaults/
 | luci-app-advancedplus | sirpdboy/luci-app-advancedplus |
 | luci-app-autoupdate | soapmancn/luci-app-autoupdate |
 | luci-app-turboacc | chenmozhijin/turboacc (branch: luci) |
+| vlmcsd (二进制) | openwrt-develop/openwrt-vlmcsd |
 | luci-app-vlmcsd | openwrt-develop/luci-app-vlmcsd |
 | luci-app-upnp | OpenWrt 官方 luci feed |
 
@@ -48,7 +49,8 @@ files/etc/uci-defaults/
 
 - **miniupnpd-nftables**（不是 miniupnpd-iptables）— OpenWrt 24.10 使用 firewall4/nftables
 - **dnsmasq-full** 替换 dnsmasq — OpenClash DNS 劫持需要
-- **vlmcsd**: cokebar 原版 2024-04 已归档，使用 openwrt-develop fork
+- **vlmcsd**: cokebar 原版 2024-04 已归档，使用 openwrt-develop/openwrt-vlmcsd（二进制）+ openwrt-develop/luci-app-vlmcsd（界面）两个 repo
+- **kmod-nft-fullcone**: turboacc 依赖，从 chenmozhijin/turboacc `package` 分支的 `nft-fullcone/` 目录获取
 - autoupdate 检测 URL: `https://api.github.com/repos/lqqk7/Tutu_GW/releases/latest`
 
 ## 修改 .config
