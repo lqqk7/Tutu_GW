@@ -15,8 +15,8 @@ git clone --depth=1 -b v6.9.4 https://github.com/sirpdboy/luci-app-ddns-go.git p
 # Advanced Plus
 git clone --depth=1 https://github.com/sirpdboy/luci-app-advancedplus.git package/luci-app-advancedplus
 
-# Autoupdate (固件自动更新，指向本仓库 releases)
-git clone --depth=1 https://github.com/soapmancn/luci-app-autoupdate.git package/luci-app-autoupdate
+# Autoupdate (支持 GitHub API 自动检测版本并更新)
+git clone --depth=1 https://github.com/xztxy/luci-app-autoupdate.git package/luci-app-autoupdate
 
 # TurboAcc LuCI 界面 (chenmozhijin fork，支持 firewall4/nftables)
 git clone --depth=1 -b luci https://github.com/chenmozhijin/turboacc.git package/turboacc

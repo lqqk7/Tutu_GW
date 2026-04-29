@@ -95,6 +95,10 @@ jobs:
           mkdir -p firmware
           find openwrt/bin/targets/x86/64 \( -name "*combined*.img.gz" -o -name "*sysupgrade*.img.gz" \) -exec cp {} firmware/ \;
           cp openwrt/bin/targets/x86/64/sha256sums firmware/ 2>/dev/null || true
+          # 生成 autoupdate 插件期望的命名格式：luci-openwrt-x86-64-{VERSION}-uefi.img.gz
+          BUILD_VER=$(date +'%Y%m%d%H%M%S')
+          EFI_SRC=$(find openwrt/bin/targets/x86/64 -name "*squashfs-combined-efi.img.gz" | head -1)
+          [ -n "$EFI_SRC" ] && cp "$EFI_SRC" firmware/luci-openwrt-x86-64-${BUILD_VER}-uefi.img.gz
           ls -lh firmware/
           echo "BUILD_DATE=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
 

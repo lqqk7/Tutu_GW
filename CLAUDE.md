@@ -36,7 +36,7 @@ files/etc/uci-defaults/
 | luci-app-openclash | vernesong/OpenClash |
 | luci-app-ddns-go | sirpdboy/luci-app-ddns-go |
 | luci-app-advancedplus | sirpdboy/luci-app-advancedplus |
-| luci-app-autoupdate | soapmancn/luci-app-autoupdate |
+| luci-app-autoupdate | xztxy/luci-app-autoupdate（支持 GitHub API 自动检测）|
 | luci-app-turboacc | chenmozhijin/turboacc (branch: luci) |
 | vlmcsd (二进制) | openwrt-develop/openwrt-vlmcsd |
 | luci-app-vlmcsd | openwrt-develop/luci-app-vlmcsd |

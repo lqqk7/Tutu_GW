@@ -74,11 +74,19 @@ uci commit dhcp
 /etc/init.d/odhcpd disable 2>/dev/null
 
 # ============================================================
-# Autoupdate — 指向 Tutu_GW GitHub releases
+# Autoupdate — xztxy/luci-app-autoupdate GitHub API 模式
 # ============================================================
-uci set autoupdate.config.auto_update='1'
-uci set autoupdate.config.update_url='https://api.github.com/repos/lqqk7/Tutu_GW/releases/latest'
-uci set autoupdate.config.fw_url='https://github.com/lqqk7/Tutu_GW/releases/latest/download/'
+uci set autoupdate.@login[0].enable='1'
+uci set autoupdate.@login[0].github='https://github.com/lqqk7/Tutu_GW'
+uci set autoupdate.@login[0].use_github_api='1'
+uci set autoupdate.@login[0].source='openwrt'
+uci set autoupdate.@login[0].luci_edition='luci'
+uci set autoupdate.@login[0].target_board='x86'
+uci set autoupdate.@login[0].device_model='x86-64'
+uci set autoupdate.@login[0].firmware_suffix='.img.gz'
+uci set autoupdate.@login[0].week='7'
+uci set autoupdate.@login[0].hour='3'
+uci set autoupdate.@login[0].minute='0'
 uci commit autoupdate 2>/dev/null
 
 exit 0
