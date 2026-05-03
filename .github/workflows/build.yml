@@ -68,6 +68,13 @@ jobs:
           cd openwrt
           $GITHUB_WORKSPACE/$DIY_P2_SH
 
+      - name: Stamp build version
+        run: |
+          BUILD_VER=$(date +'%Y%m%d%H%M%S')
+          echo "BUILD_VER=${BUILD_VER}" >> $GITHUB_ENV
+          mkdir -p openwrt/files/etc
+          echo "${BUILD_VER}" > openwrt/files/etc/tutu_build_version
+
       - name: Load configuration
         run: |
           cp $CONFIG_FILE openwrt/.config
@@ -94,7 +101,6 @@ jobs:
           find openwrt/bin/targets/x86/64 \( -name "*combined*.img.gz" -o -name "*sysupgrade*.img.gz" \) -exec cp {} firmware/ \;
           cp openwrt/bin/targets/x86/64/sha256sums firmware/ 2>/dev/null || true
           # 生成 autoupdate 插件期望的命名格式：luci-openwrt-x86-64-{VERSION}-uefi-{6hash}.img.gz
-          BUILD_VER=$(date +'%Y%m%d%H%M%S')
           EFI_SRC=$(find openwrt/bin/targets/x86/64 -name "*squashfs-combined-efi.img.gz" | head -1)
           if [ -n "$EFI_SRC" ]; then
             HASH6=$(sha256sum "$EFI_SRC" | cut -c1-6)

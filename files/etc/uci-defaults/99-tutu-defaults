@@ -74,6 +74,12 @@ uci commit dhcp
 /etc/init.d/odhcpd disable 2>/dev/null
 
 # ============================================================
+# LuCI 默认语言
+# ============================================================
+uci set luci.main.lang='zh_Hans'
+uci commit luci
+
+# ============================================================
 # Autoupdate — xztxy/luci-app-autoupdate GitHub API 模式
 # ============================================================
 uci set autoupdate.@login[0].enable='1'
@@ -87,6 +93,14 @@ uci set autoupdate.@login[0].firmware_suffix='.img.gz'
 uci set autoupdate.@login[0].week='7'
 uci set autoupdate.@login[0].hour='3'
 uci set autoupdate.@login[0].minute='0'
+
+# 注入构建版本号（由 CI 在构建时写入 /etc/tutu_build_version）
+if [ -f /etc/tutu_build_version ]; then
+    BUILD_VER=$(cat /etc/tutu_build_version)
+    uci set autoupdate.@login[0].version="$BUILD_VER"
+    rm -f /etc/tutu_build_version
+fi
+
 uci commit autoupdate 2>/dev/null
 
 exit 0
