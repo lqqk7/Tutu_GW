@@ -97,7 +97,7 @@ uci set autoupdate.@login[0].minute='0'
 # 注入构建版本号（由 CI 在构建时写入 /etc/tutu_build_version）
 if [ -f /etc/tutu_build_version ]; then
     BUILD_VER=$(cat /etc/tutu_build_version)
-    uci set autoupdate.@login[0].version="$BUILD_VER"
+    uci set autoupdate.@login[0].firmware_version="$BUILD_VER"
     rm -f /etc/tutu_build_version
 fi
 

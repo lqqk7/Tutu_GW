@@ -106,14 +106,19 @@ jobs:
             HASH6=$(sha256sum "$EFI_SRC" | cut -c1-6)
             cp "$EFI_SRC" firmware/luci-openwrt-x86-64-${BUILD_VER}-uefi-${HASH6}.img.gz
           fi
+          LEGACY_SRC=$(find openwrt/bin/targets/x86/64 -name "*squashfs-combined.img.gz" ! -name "*efi*" | head -1)
+          if [ -n "$LEGACY_SRC" ]; then
+            HASH6=$(sha256sum "$LEGACY_SRC" | cut -c1-6)
+            cp "$LEGACY_SRC" firmware/luci-openwrt-x86-64-${BUILD_VER}-legacy-${HASH6}.img.gz
+          fi
           ls -lh firmware/
           echo "BUILD_DATE=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: v${{ env.BUILD_DATE }}
-          name: "Tutu_GW v${{ env.BUILD_DATE }}"
+          tag_name: v${{ env.BUILD_VER }}
+          name: "Tutu_GW v${{ env.BUILD_VER }}"
           files: firmware/*
           fail_on_unmatched_files: true
           body: |
