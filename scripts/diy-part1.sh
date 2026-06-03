@@ -18,6 +18,21 @@ git clone --depth=1 https://github.com/sirpdboy/luci-app-advancedplus.git packag
 # Autoupdate (支持 GitHub API 自动检测版本并更新)
 git clone --depth=1 https://github.com/xztxy/luci-app-autoupdate.git package/luci-app-autoupdate
 
+# MosDNS v5 + geodata
+git clone --depth=1 -b v5 https://github.com/sbwml/luci-app-mosdns.git package/mosdns
+git clone --depth=1 https://github.com/sbwml/v2ray-geodata.git package/v2ray-geodata
+
+# PassWall (官方组织仓库：LuCI + 核心依赖)
+git clone --depth=1 https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git package/passwall-packages
+git clone --depth=1 https://github.com/Openwrt-Passwall/openwrt-passwall.git package/passwall-luci
+# 使用 sbwml/v2ray-geodata，避免与 PassWall 依赖仓库重复定义 geodata 包
+rm -rf package/passwall-packages/v2ray-geodata
+
+# SSR Plus (helloworld)
+git clone --depth=1 https://github.com/fw876/helloworld.git package/helloworld
+# helloworld 与 PassWall 依赖仓库有大量同名包，只保留 SSR Plus 独有包和 LuCI
+rm -rf package/helloworld/{chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,mosdns,naiveproxy,shadow-tls,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,tuic-client,v2ray-plugin,xray-core,xray-plugin}
+
 # TurboAcc LuCI 界面 (chenmozhijin fork，支持 firewall4/nftables)
 git clone --depth=1 -b luci https://github.com/chenmozhijin/turboacc.git package/turboacc
 # kmod-nft-fullcone (turboacc 依赖，来自 package 分支)

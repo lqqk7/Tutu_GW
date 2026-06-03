@@ -134,4 +134,4 @@ jobs:
             - 默认密码: 空
 
             ### 内置插件
-            openclash · ddns-go · advancedplus · autoupdate · turboacc · vlmcsd · upnp
+            openclash · mosdns · passwall · ssrplus · ddns-go · advancedplus · autoupdate · turboacc · vlmcsd · upnp
