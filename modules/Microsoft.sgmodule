@@ -1,0 +1,5 @@
+#!name=Microsoft AI
+#!desc=Microsoft Copilot Azure OpenAI VS Code and related resources
+
+[Rule]
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/Microsoft.list,PROXY

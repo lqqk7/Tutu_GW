@@ -1,0 +1,5 @@
+#!name=MCP
+#!desc=Model Context Protocol and AI developer integration resources
+
+[Rule]
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/MCP.list,PROXY

@@ -1,0 +1,5 @@
+#!name=Anthropic
+#!desc=Claude Anthropic API and related web resources
+
+[Rule]
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/Anthropic.list,PROXY

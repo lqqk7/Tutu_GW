@@ -1,0 +1,18 @@
+#!name=AI Services
+#!desc=Claude ChatGPT Gemini Cursor GitHub Copilot OpenRouter Perplexity xAI Hugging Face Tavily Brave MCP
+
+[Rule]
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/Anthropic.list,PROXY
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/OpenAI.list,PROXY
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/Gemini.list,PROXY
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/Cursor.list,PROXY
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/GitHub.list,PROXY
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/Microsoft.list,PROXY
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/Cloudflare.list,PROXY
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/OpenRouter.list,PROXY
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/Perplexity.list,PROXY
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/xAI.list,PROXY
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/HuggingFace.list,PROXY
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/Tavily.list,PROXY
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/Brave.list,PROXY
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/MCP.list,PROXY

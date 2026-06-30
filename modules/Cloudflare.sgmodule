@@ -1,0 +1,5 @@
+#!name=Cloudflare AI
+#!desc=Cloudflare Workers AI AI Gateway and related resources
+
+[Rule]
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/Cloudflare.list,PROXY

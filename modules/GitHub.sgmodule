@@ -1,0 +1,5 @@
+#!name=GitHub
+#!desc=GitHub GitHub Copilot and developer resources
+
+[Rule]
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/GitHub.list,PROXY

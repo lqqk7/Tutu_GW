@@ -1,0 +1,5 @@
+#!name=Perplexity
+#!desc=Perplexity AI web and API resources
+
+[Rule]
+RULE-SET,https://raw.githubusercontent.com/lqqk7/Tutu_GW/main/rules/Perplexity.list,PROXY
