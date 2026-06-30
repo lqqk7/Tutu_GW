@@ -1,0 +1,13 @@
+# Cloudflare / Workers AI / AI Gateway
+DOMAIN-SUFFIX,cloudflare.com
+DOMAIN-SUFFIX,cloudflareaccess.com
+DOMAIN-SUFFIX,cloudflareclient.com
+DOMAIN-SUFFIX,cloudflareinsights.com
+DOMAIN-SUFFIX,cloudflare-quic.com
+DOMAIN-SUFFIX,cloudflarestream.com
+DOMAIN-SUFFIX,cloudflareworkers.com
+DOMAIN-SUFFIX,workers.dev
+DOMAIN-SUFFIX,pages.dev
+DOMAIN-SUFFIX,trycloudflare.com
+DOMAIN-SUFFIX,argotunnel.com
+DOMAIN-SUFFIX,r2.cloudflarestorage.com

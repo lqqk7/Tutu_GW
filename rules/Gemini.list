@@ -1,0 +1,16 @@
+# Google Gemini / AI Studio / Vertex AI
+DOMAIN-SUFFIX,generativeai.google
+DOMAIN-SUFFIX,deepmind.google
+DOMAIN-SUFFIX,ai.google.dev
+DOMAIN-SUFFIX,notebooklm.google
+DOMAIN,aistudio.google.com
+DOMAIN,gemini.google.com
+DOMAIN,makersuite.google.com
+DOMAIN,notebooklm.google.com
+DOMAIN,alkalicore-pa.clients6.google.com
+DOMAIN-SUFFIX,googleapis.com
+DOMAIN-SUFFIX,googleusercontent.com
+DOMAIN-SUFFIX,gstatic.com
+DOMAIN-KEYWORD,gemini
+DOMAIN-KEYWORD,vertexai
+DOMAIN-KEYWORD,generativeai
