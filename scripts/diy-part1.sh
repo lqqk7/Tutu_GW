@@ -34,6 +34,13 @@ git clone --depth=1 https://github.com/Openwrt-Passwall/openwrt-passwall-package
 git clone --depth=1 https://github.com/Openwrt-Passwall/openwrt-passwall.git package/passwall-luci
 # 使用 sbwml/v2ray-geodata，避免与 PassWall 依赖仓库重复定义 geodata 包
 rm -rf package/passwall-packages/v2ray-geodata
+# OpenWrt 24.10 ships Go 1.23; keep feed versions for newer Go cores and pin geoview.
+GEOVIEW_VERSION="0.1.10"
+GEOVIEW_HASH="9221df928df68030893125a60bdf6d8a1fef2b199fa58ed80772cb3c17225fc5"
+sed -i.bak "s|^PKG_VERSION:=.*|PKG_VERSION:=${GEOVIEW_VERSION}|" package/passwall-packages/geoview/Makefile
+sed -i.bak "s|^PKG_HASH:=.*|PKG_HASH:=${GEOVIEW_HASH}|" package/passwall-packages/geoview/Makefile
+rm -f package/passwall-packages/geoview/Makefile.bak
+rm -rf package/passwall-packages/{hysteria,sing-box,v2ray-plugin,xray-core,xray-plugin}
 
 # SSR Plus (helloworld)
 git clone --depth=1 https://github.com/fw876/helloworld.git package/helloworld
