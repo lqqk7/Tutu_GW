@@ -19,7 +19,14 @@ git clone --depth=1 https://github.com/sirpdboy/luci-app-advancedplus.git packag
 git clone --depth=1 https://github.com/xztxy/luci-app-autoupdate.git package/luci-app-autoupdate
 
 # MosDNS v5 + geodata
-git clone --depth=1 -b v5 https://github.com/sbwml/luci-app-mosdns.git package/mosdns
+# Pin to the last known OpenWrt 24.10-compatible package: MosDNS 5.3.3 uses Go 1.22,
+# while current v5 tracks MosDNS 5.3.4 which requires newer Go than openwrt-24.10.
+MOSDNS_PACKAGE_COMMIT="83b370771678527d54a9d95c640431324134dd9f"
+mkdir -p package/mosdns
+git -C package/mosdns init
+git -C package/mosdns remote add origin https://github.com/sbwml/luci-app-mosdns.git
+git -C package/mosdns fetch --depth=1 origin "$MOSDNS_PACKAGE_COMMIT"
+git -C package/mosdns checkout --detach FETCH_HEAD
 git clone --depth=1 https://github.com/sbwml/v2ray-geodata.git package/v2ray-geodata
 
 # PassWall (官方组织仓库：LuCI + 核心依赖)
