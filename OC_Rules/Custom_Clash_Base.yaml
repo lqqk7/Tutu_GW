@@ -1,0 +1,69 @@
+mixed-port: 7893
+allow-lan: true
+mode: rule
+log-level: info
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+sniffer:
+  enable: true
+  override-destination: true
+  sniff:
+    TLS:
+      ports:
+        - 443
+        - 8443
+    HTTP:
+      ports:
+        - 80
+        - 8080-8880
+      override-destination: true
+  skip-domain:
+    - "+.apple.com"
+    - "+.flashforge.com"
+    - "+.fdmcloud.flashforge.com"
+    - "+.voxelshare.com"
+    - "+.netease.im"
+    - "+.chatnos.com"
+  parse-pure-ip: true
+  force-dns-mapping: true
+
+dns:
+  enable: true
+  listen: 0.0.0.0:7874
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "localhost.ptlogin2.qq.com"
+    - "+.flashforge.com"
+    - "+.fdmcloud.flashforge.com"
+    - "+.voxelshare.com"
+    - "+.netease.im"
+    - "+.chatnos.com"
+    - "geosite:cn"
+  fake-ip-filter-mode: blacklist
+  respect-rules: true
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  proxy-server-nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  nameserver:
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.google/dns-query
+  nameserver-policy:
+    "geosite:cn,private":
+      - https://dns.alidns.com/dns-query
+      - https://doh.pub/dns-query
+    "geosite:geolocation-!cn":
+      - https://cloudflare-dns.com/dns-query
+      - https://dns.google/dns-query

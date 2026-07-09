@@ -17,6 +17,7 @@ RAW_BASE = os.environ.get(
     "https://raw.githubusercontent.com/lqqk7/Tutu_GW/main",
 )
 TARGET = Path("OC_Rules/Custom_Clash_Lite.ini")
+BASE_CONFIG = Path("OC_Rules/Custom_Clash_Base.yaml")
 AI_PROVIDER = Path("OC_Rules/rule/AI_Classical.yaml")
 AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
 SHADOWROCKET_AI_RULES = Path("rules/AI-All.list")
@@ -26,10 +27,13 @@ US_NODE_FILTER = r"(?i)^(?:.*9929v3.*|(?=.*AI)(?=.*美国)(?=.*家宽).*)$"
 CUSTOM_RULESETS = [
     f"ruleset=🤖 AI服务,clash-classic:{RAW_BASE}/OC_Rules/rule/AI_Classical.yaml,28800",
     f"ruleset=🖨️ AD5X切片,clash-classic:{RAW_BASE}/OC_Rules/rule/AD5X_Classical.yaml,28800",
+    "ruleset=🚀 手动选择,clash-domain:https://testingcf.jsdelivr.net/gh/Aethersailor/Custom_OpenClash_Rules@main/rule/Encrypted_DNS_Domain.yaml,28800",
+    "ruleset=🚀 手动选择,clash-classic:https://testingcf.jsdelivr.net/gh/Aethersailor/Custom_OpenClash_Rules@main/rule/Encrypted_DNS_Classical_IP.yaml,28800",
 ]
 
 CUSTOM_PROXY_GROUPS = [
-    "custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🇺🇸 美国节点`[]🎯 全球直连",
+    "custom_proxy_group=🚀 手动选择`select`[]🔰 全部节点`[]♻️ 自动选择`[]🇺🇸 美国节点`[]🎯 全球直连",
+    "custom_proxy_group=🔰 全部节点`select`.*",
     f"custom_proxy_group=♻️ 自动选择`url-test`{US_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50",
     "custom_proxy_group=🤖 AI服务`select`[]🚀 手动选择`[]♻️ 自动选择`[]🇺🇸 美国节点",
     "custom_proxy_group=🖨️ AD5X切片`select`[]🎯 全球直连`[]🚀 手动选择`[]♻️ 自动选择`[]🇺🇸 美国节点",
@@ -57,6 +61,78 @@ AD5X_RULES = [
     "DOMAIN,nos.netease.com",
     "DOMAIN-SUFFIX,chatnos.com",
 ]
+
+BASE_CONFIG_TEXT = """\
+mixed-port: 7893
+allow-lan: true
+mode: rule
+log-level: info
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+sniffer:
+  enable: true
+  override-destination: true
+  sniff:
+    TLS:
+      ports:
+        - 443
+        - 8443
+    HTTP:
+      ports:
+        - 80
+        - 8080-8880
+      override-destination: true
+  skip-domain:
+    - "+.apple.com"
+    - "+.flashforge.com"
+    - "+.fdmcloud.flashforge.com"
+    - "+.voxelshare.com"
+    - "+.netease.im"
+    - "+.chatnos.com"
+  parse-pure-ip: true
+  force-dns-mapping: true
+
+dns:
+  enable: true
+  listen: 0.0.0.0:7874
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "localhost.ptlogin2.qq.com"
+    - "+.flashforge.com"
+    - "+.fdmcloud.flashforge.com"
+    - "+.voxelshare.com"
+    - "+.netease.im"
+    - "+.chatnos.com"
+    - "geosite:cn"
+  fake-ip-filter-mode: blacklist
+  respect-rules: true
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  proxy-server-nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  nameserver:
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.google/dns-query
+  nameserver-policy:
+    "geosite:cn,private":
+      - https://dns.alidns.com/dns-query
+      - https://doh.pub/dns-query
+    "geosite:geolocation-!cn":
+      - https://cloudflare-dns.com/dns-query
+      - https://dns.google/dns-query
+"""
 
 FORBIDDEN_RULE_HINTS = ("广告", "去广告", "拦截", "adblock", "reject")
 FORBIDDEN_REGION_GROUPS = ("🇭🇰", "🇯🇵", "🇸🇬", "🇼🇸", "🇰🇷", "香港节点", "日本节点", "新加坡节点", "台湾节点", "韩国节点")
@@ -90,6 +166,22 @@ def insert_custom_rulesets(lines: list[str]) -> list[str]:
             inserted = True
 
     return output
+
+
+def insert_base_config(lines: list[str]) -> list[str]:
+    base_line = f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml"
+    without_existing = [line for line in lines if not line.startswith("clash_rule_base=")]
+
+    try:
+        custom_index = without_existing.index("[custom]")
+    except ValueError as error:
+        raise RuntimeError("Upstream [custom] section not found") from error
+
+    return [
+        *without_existing[: custom_index + 1],
+        base_line,
+        *without_existing[custom_index + 1 :],
+    ]
 
 
 def replace_proxy_groups(lines: list[str]) -> list[str]:
@@ -149,10 +241,18 @@ def write_custom_providers() -> None:
     write_classical_provider(AD5X_PROVIDER, AD5X_RULES)
 
 
+def write_base_config() -> None:
+    BASE_CONFIG.parent.mkdir(parents=True, exist_ok=True)
+    BASE_CONFIG.write_text(BASE_CONFIG_TEXT, encoding="utf-8")
+
+
 def validate_generated(text: str) -> None:
     required = [
         "[custom]",
+        f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml",
         *CUSTOM_RULESETS,
+        "custom_proxy_group=🚀 手动选择`select`[]🔰 全部节点`[]♻️ 自动选择`[]🇺🇸 美国节点`[]🎯 全球直连",
+        "custom_proxy_group=🔰 全部节点`select`.*",
         f"custom_proxy_group=🇺🇸 美国节点`url-test`{US_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50",
         "ruleset=🤖 AI服务,clash-classic:",
         "ruleset=🖨️ AD5X切片,clash-classic:",
@@ -179,6 +279,7 @@ def validate_generated(text: str) -> None:
 def main() -> int:
     upstream = fetch_text(UPSTREAM_URL)
     lines = [line.rstrip() for line in upstream.replace("\r\n", "\n").splitlines()]
+    lines = insert_base_config(lines)
     lines = insert_custom_rulesets(lines)
     lines = replace_proxy_groups(lines)
     output = "\n".join(lines).rstrip() + "\n"
@@ -186,6 +287,7 @@ def main() -> int:
 
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     TARGET.write_text(output, encoding="utf-8")
+    write_base_config()
     write_custom_providers()
     print(f"Synced OpenClash Lite config into {TARGET}")
     return 0
