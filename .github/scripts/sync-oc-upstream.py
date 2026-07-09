@@ -23,6 +23,7 @@ AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
 SHADOWROCKET_AI_RULES = Path("rules/AI-All.list")
 
 US_NODE_FILTER = r"(?i)^(?:.*9929v3.*|(?=.*AI)(?=.*美国)(?=.*家宽).*)$"
+INCLUDE_REMARKS = f"include_remarks={US_NODE_FILTER}"
 
 CUSTOM_RULESETS = [
     f"ruleset=🤖 AI服务,clash-classic:{RAW_BASE}/OC_Rules/rule/AI_Classical.yaml,28800",
@@ -169,7 +170,11 @@ def insert_custom_rulesets(lines: list[str]) -> list[str]:
 
 def insert_base_config(lines: list[str]) -> list[str]:
     base_line = f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml"
-    without_existing = [line for line in lines if not line.startswith("clash_rule_base=")]
+    without_existing = [
+        line
+        for line in lines
+        if not line.startswith(("clash_rule_base=", "include_remarks="))
+    ]
 
     try:
         custom_index = without_existing.index("[custom]")
@@ -179,6 +184,7 @@ def insert_base_config(lines: list[str]) -> list[str]:
     return [
         *without_existing[: custom_index + 1],
         base_line,
+        INCLUDE_REMARKS,
         *without_existing[custom_index + 1 :],
     ]
 
@@ -249,6 +255,7 @@ def validate_generated(text: str) -> None:
     required = [
         "[custom]",
         f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml",
+        INCLUDE_REMARKS,
         *CUSTOM_RULESETS,
         "custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🎯 全球直连`[]🇺🇸 美国节点",
         f"custom_proxy_group=🇺🇸 美国节点`select`{US_NODE_FILTER}",
