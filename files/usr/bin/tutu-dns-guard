@@ -1,0 +1,77 @@
+#!/bin/sh
+# Force LAN DNS through OpenClash to avoid ISP DNS leaks.
+
+LAN_IP="${LAN_IP:-$(uci -q get network.lan.ipaddr 2>/dev/null)}"
+[ -n "$LAN_IP" ] || LAN_IP='192.168.5.1'
+CLASH_DNS_PORT="${CLASH_DNS_PORT:-7874}"
+
+# Keep IPv6 DNS from leaking on existing installs too.
+uci -q delete network.lan.ip6assign
+uci set network.wan6.disabled='1' 2>/dev/null || uci -q delete network.wan6
+
+# Do not accept DNS servers pushed by the ISP.
+uci set network.wan.peerdns='0'
+uci -q delete network.wan.dns
+uci add_list network.wan.dns='1.1.1.1'
+uci add_list network.wan.dns='8.8.8.8'
+uci commit network
+
+DNSMASQ_SECTION="$(uci show dhcp 2>/dev/null | sed -n 's/^dhcp\.\([^=]*\)=dnsmasq$/\1/p' | head -n 1)"
+[ -n "$DNSMASQ_SECTION" ] || DNSMASQ_SECTION='@dnsmasq[0]'
+
+# dnsmasq only forwards to OpenClash DNS. It should not use /tmp/resolv.conf.
+uci set dhcp."$DNSMASQ_SECTION".noresolv='1'
+uci set dhcp."$DNSMASQ_SECTION".cachesize='0'
+uci set dhcp."$DNSMASQ_SECTION".localservice='1'
+uci -q delete dhcp."$DNSMASQ_SECTION".resolvfile
+uci -q delete dhcp."$DNSMASQ_SECTION".server
+uci add_list dhcp."$DNSMASQ_SECTION".server="127.0.0.1#${CLASH_DNS_PORT}"
+
+# Tell LAN clients to use the router as DNS.
+uci -q delete dhcp.lan.dhcp_option
+uci add_list dhcp.lan.dhcp_option="6,${LAN_IP}"
+uci set dhcp.lan.dhcpv6='disabled'
+uci set dhcp.lan.ra='disabled'
+uci set dhcp.lan.ndp='disabled'
+uci commit dhcp
+
+# Redirect hardcoded LAN DNS queries back to the router.
+uci -q delete firewall.tutu_force_dns
+uci set firewall.tutu_force_dns='redirect'
+uci set firewall.tutu_force_dns.name='Tutu Force LAN DNS'
+uci set firewall.tutu_force_dns.family='ipv4'
+uci set firewall.tutu_force_dns.src='lan'
+uci set firewall.tutu_force_dns.proto='tcp udp'
+uci set firewall.tutu_force_dns.src_dport='53'
+uci set firewall.tutu_force_dns.dest='lan'
+uci set firewall.tutu_force_dns.dest_ip="$LAN_IP"
+uci set firewall.tutu_force_dns.dest_port='53'
+uci set firewall.tutu_force_dns.target='DNAT'
+
+uci -q delete firewall.tutu_block_lan_dns_v6
+uci set firewall.tutu_block_lan_dns_v6='rule'
+uci set firewall.tutu_block_lan_dns_v6.name='Tutu Block LAN IPv6 DNS'
+uci set firewall.tutu_block_lan_dns_v6.family='ipv6'
+uci set firewall.tutu_block_lan_dns_v6.src='lan'
+uci set firewall.tutu_block_lan_dns_v6.dest='wan'
+uci set firewall.tutu_block_lan_dns_v6.proto='tcp udp'
+uci set firewall.tutu_block_lan_dns_v6.dest_port='53'
+uci set firewall.tutu_block_lan_dns_v6.target='REJECT'
+
+# Stop direct LAN DoT from bypassing OpenClash. Router-originated DoH/DoT is untouched.
+uci -q delete firewall.tutu_block_lan_dot
+uci set firewall.tutu_block_lan_dot='rule'
+uci set firewall.tutu_block_lan_dot.name='Tutu Block LAN DoT'
+uci set firewall.tutu_block_lan_dot.family='any'
+uci set firewall.tutu_block_lan_dot.src='lan'
+uci set firewall.tutu_block_lan_dot.dest='wan'
+uci set firewall.tutu_block_lan_dot.proto='tcp udp'
+uci set firewall.tutu_block_lan_dot.dest_port='853'
+uci set firewall.tutu_block_lan_dot.target='REJECT'
+uci commit firewall
+
+/etc/init.d/odhcp6c disable 2>/dev/null || true
+/etc/init.d/odhcpd stop 2>/dev/null || true
+/etc/init.d/odhcpd disable 2>/dev/null || true
+/etc/init.d/dnsmasq restart 2>/dev/null || true
+/etc/init.d/firewall restart 2>/dev/null || true

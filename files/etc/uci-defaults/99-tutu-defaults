@@ -74,6 +74,13 @@ uci commit dhcp
 /etc/init.d/odhcpd disable 2>/dev/null
 
 # ============================================================
+# DNS leak guard — force LAN DNS through OpenClash DNS
+# ============================================================
+if [ -f /usr/bin/tutu-dns-guard ]; then
+    sh /usr/bin/tutu-dns-guard
+fi
+
+# ============================================================
 # LuCI 默认语言
 # ============================================================
 uci set luci.main.lang='zh_Hans'
