@@ -35,8 +35,12 @@ jobs:
           grep -q 'https://cloudflare-dns.com/dns-query#🚀 手动选择' OC_Rules/Custom_Clash_Base.yaml
           grep -q 'https://dns.google/dns-query#🚀 手动选择' OC_Rules/Custom_Clash_Base.yaml
           grep -q 'https://dns.quad9.net/dns-query#🚀 手动选择' OC_Rules/Custom_Clash_Base.yaml
-          ! grep -Eq 'nameserver-policy|geosite:private|^[[:space:]]*-[[:space:]]*system$' OC_Rules/Custom_Clash_Base.yaml
-          ! grep -Eq '223\\.5\\.5\\.5|119\\.29\\.29\\.29|dns\\.alidns\\.com|doh\\.pub' OC_Rules/Custom_Clash_Base.yaml
+          grep -q 'nameserver-policy:' OC_Rules/Custom_Clash_Base.yaml
+          grep -q '"geosite:cn":' OC_Rules/Custom_Clash_Base.yaml
+          grep -q 'https://dns.alidns.com/dns-query' OC_Rules/Custom_Clash_Base.yaml
+          grep -q 'https://doh.pub/dns-query' OC_Rules/Custom_Clash_Base.yaml
+          ! grep -Eq 'geosite:private|^[[:space:]]*-[[:space:]]*system$' OC_Rules/Custom_Clash_Base.yaml
+          ! grep -Eq '223\\.5\\.5\\.5|119\\.29\\.29\\.29' OC_Rules/Custom_Clash_Base.yaml
           grep -q 'DOMAIN-SUFFIX,claude.ai' OC_Rules/rule/AI_Classical.yaml
           grep -q 'DOMAIN-SUFFIX,flashforge.com' OC_Rules/rule/AD5X_Classical.yaml
           ! grep -Eq '🇭🇰|🇯🇵|🇸🇬|🇼🇸|🇰🇷|香港节点|日本节点|新加坡节点|台湾节点|韩国节点' OC_Rules/Custom_Clash_Lite.ini
