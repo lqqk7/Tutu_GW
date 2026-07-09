@@ -1,0 +1,9 @@
+payload:
+  - DOMAIN-SUFFIX,flashforge.com
+  - DOMAIN-SUFFIX,fdmcloud.flashforge.com
+  - DOMAIN-SUFFIX,voxelshare.com
+  - DOMAIN,flashforge.oss-us-east-1.aliyuncs.com
+  - DOMAIN-SUFFIX,netease.im
+  - DOMAIN,httpdns.n.netease.com
+  - DOMAIN,nos.netease.com
+  - DOMAIN-SUFFIX,chatnos.com

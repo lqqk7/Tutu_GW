@@ -1,0 +1,43 @@
+name: Sync OC Rules
+
+on:
+  schedule:
+    - cron: '45 20 * * 0'  # 每周一 04:45 CST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Sync upstream OpenClash rules
+        run: python3 .github/scripts/sync-oc-upstream.py
+
+      - name: Validate generated files
+        run: |
+          grep -q 'ruleset=🤖 AI服务' OC_Rules/Custom_Clash_Lite.ini
+          grep -q 'ruleset=🖨️ AD5X切片' OC_Rules/Custom_Clash_Lite.ini
+          grep -q 'custom_proxy_group=🇺🇸 美国节点.*9929v3' OC_Rules/Custom_Clash_Lite.ini
+          grep -q 'DOMAIN-SUFFIX,claude.ai' OC_Rules/rule/AI_Classical.yaml
+          grep -q 'DOMAIN-SUFFIX,flashforge.com' OC_Rules/rule/AD5X_Classical.yaml
+          ! grep -Eq '🇭🇰|🇯🇵|🇸🇬|🇼🇸|🇰🇷|香港节点|日本节点|新加坡节点|台湾节点|韩国节点' OC_Rules/Custom_Clash_Lite.ini
+          ! grep -Eiq '广告|去广告|拦截|adblock|reject' OC_Rules/Custom_Clash_Lite.ini
+
+      - name: Commit rules if changed
+        run: |
+          if git diff --quiet -- OC_Rules; then
+            echo "No upstream OpenClash rule changes."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add OC_Rules
+          git commit -m "chore: sync oc rule snapshot"
+          git push
