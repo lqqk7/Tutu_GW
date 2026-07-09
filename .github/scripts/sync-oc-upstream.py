@@ -130,9 +130,6 @@ dns:
     - https://cloudflare-dns.com/dns-query#🚀 手动选择
     - https://dns.google/dns-query#🚀 手动选择
     - https://dns.quad9.net/dns-query#🚀 手动选择
-  nameserver-policy:
-    "geosite:private":
-      - system
 """
 
 FORBIDDEN_RULE_HINTS = ("广告", "去广告", "拦截", "adblock", "reject")
