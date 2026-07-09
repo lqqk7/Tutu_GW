@@ -25,7 +25,7 @@ jobs:
           grep -q 'ruleset=🖨️ AD5X切片' OC_Rules/Custom_Clash_Lite.ini
           grep -q 'Encrypted_DNS_Domain.yaml' OC_Rules/Custom_Clash_Lite.ini
           grep -q 'clash_rule_base=.*OC_Rules/Custom_Clash_Base.yaml' OC_Rules/Custom_Clash_Lite.ini
-          grep -q 'custom_proxy_group=🔰 全部节点`select`.*' OC_Rules/Custom_Clash_Lite.ini
+          grep -q 'custom_proxy_group=🚀 手动选择.*`.*' OC_Rules/Custom_Clash_Lite.ini
           grep -q 'custom_proxy_group=🇺🇸 美国节点.*9929v3' OC_Rules/Custom_Clash_Lite.ini
           grep -q 'respect-rules: true' OC_Rules/Custom_Clash_Base.yaml
           grep -q 'ipv6: false' OC_Rules/Custom_Clash_Base.yaml

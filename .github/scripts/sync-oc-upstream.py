@@ -32,8 +32,7 @@ CUSTOM_RULESETS = [
 ]
 
 CUSTOM_PROXY_GROUPS = [
-    "custom_proxy_group=🚀 手动选择`select`[]🔰 全部节点`[]♻️ 自动选择`[]🇺🇸 美国节点`[]🎯 全球直连",
-    "custom_proxy_group=🔰 全部节点`select`.*",
+    "custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🇺🇸 美国节点`[]🎯 全球直连`.*",
     f"custom_proxy_group=♻️ 自动选择`url-test`{US_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50",
     "custom_proxy_group=🤖 AI服务`select`[]🚀 手动选择`[]♻️ 自动选择`[]🇺🇸 美国节点",
     "custom_proxy_group=🖨️ AD5X切片`select`[]🎯 全球直连`[]🚀 手动选择`[]♻️ 自动选择`[]🇺🇸 美国节点",
@@ -251,8 +250,7 @@ def validate_generated(text: str) -> None:
         "[custom]",
         f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml",
         *CUSTOM_RULESETS,
-        "custom_proxy_group=🚀 手动选择`select`[]🔰 全部节点`[]♻️ 自动选择`[]🇺🇸 美国节点`[]🎯 全球直连",
-        "custom_proxy_group=🔰 全部节点`select`.*",
+        "custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🇺🇸 美国节点`[]🎯 全球直连`.*",
         f"custom_proxy_group=🇺🇸 美国节点`url-test`{US_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50",
         "ruleset=🤖 AI服务,clash-classic:",
         "ruleset=🖨️ AD5X切片,clash-classic:",
