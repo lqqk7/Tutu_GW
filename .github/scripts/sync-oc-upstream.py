@@ -22,8 +22,8 @@ AI_PROVIDER = Path("OC_Rules/rule/AI_Classical.yaml")
 AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
 SHADOWROCKET_AI_RULES = Path("rules/AI-All.list")
 
-US_NODE_FILTER = r"(?i)^(?:.*9929v3.*|(?=.*AI)(?=.*美国)(?=.*家宽).*)$"
-INCLUDE_REMARKS_FILTER = r"(?i)^(?:.*9929v3.*|(?=.*AI)(?=.*美国)(?=.*家宽).*|♻️ 自动选择|🎯 全球直连|🇺🇸 美国节点)$"
+US_NODE_FILTER = r"(?i)^(?:.*9929v3.*|(?=.*美国)(?=.*家宽).*)$"
+INCLUDE_REMARKS_FILTER = r"(?i)^(?:.*9929v3.*|(?=.*美国)(?=.*家宽).*|♻️ 自动选择|🎯 全球直连|🇺🇸 美国节点)$"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
 
 CUSTOM_RULESETS = [
@@ -34,7 +34,7 @@ CUSTOM_RULESETS = [
 ]
 
 CUSTOM_PROXY_GROUPS = [
-    "custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🎯 全球直连`[]🇺🇸 美国节点",
+    f"custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🎯 全球直连`{US_NODE_FILTER}",
     f"custom_proxy_group=🇺🇸 美国节点`select`{US_NODE_FILTER}",
     f"custom_proxy_group=♻️ 自动选择`url-test`{US_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50",
     "custom_proxy_group=🤖 AI服务`select`[]🚀 手动选择`[]♻️ 自动选择",
@@ -258,7 +258,7 @@ def validate_generated(text: str) -> None:
         f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml",
         INCLUDE_REMARKS,
         *CUSTOM_RULESETS,
-        "custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🎯 全球直连`[]🇺🇸 美国节点",
+        f"custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🎯 全球直连`{US_NODE_FILTER}",
         f"custom_proxy_group=🇺🇸 美国节点`select`{US_NODE_FILTER}",
         f"custom_proxy_group=♻️ 自动选择`url-test`{US_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50",
         "ruleset=🤖 AI服务,clash-classic:",
