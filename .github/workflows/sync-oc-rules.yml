@@ -31,7 +31,11 @@ jobs:
           grep -q 'custom_proxy_group=♻️ 自动选择`url-test`.*9929v3' OC_Rules/Custom_Clash_Lite.ini
           grep -q 'respect-rules: true' OC_Rules/Custom_Clash_Base.yaml
           grep -q 'ipv6: false' OC_Rules/Custom_Clash_Base.yaml
-          grep -q 'https://cloudflare-dns.com/dns-query' OC_Rules/Custom_Clash_Base.yaml
+          grep -q 'use-system-hosts: false' OC_Rules/Custom_Clash_Base.yaml
+          grep -q 'https://cloudflare-dns.com/dns-query#🚀 手动选择' OC_Rules/Custom_Clash_Base.yaml
+          grep -q 'https://dns.google/dns-query#🚀 手动选择' OC_Rules/Custom_Clash_Base.yaml
+          grep -q 'https://dns.quad9.net/dns-query#🚀 手动选择' OC_Rules/Custom_Clash_Base.yaml
+          ! grep -Eq '223\\.5\\.5\\.5|119\\.29\\.29\\.29|dns\\.alidns\\.com|doh\\.pub' OC_Rules/Custom_Clash_Base.yaml
           grep -q 'DOMAIN-SUFFIX,claude.ai' OC_Rules/rule/AI_Classical.yaml
           grep -q 'DOMAIN-SUFFIX,flashforge.com' OC_Rules/rule/AD5X_Classical.yaml
           ! grep -Eq '🇭🇰|🇯🇵|🇸🇬|🇼🇸|🇰🇷|香港节点|日本节点|新加坡节点|台湾节点|韩国节点' OC_Rules/Custom_Clash_Lite.ini

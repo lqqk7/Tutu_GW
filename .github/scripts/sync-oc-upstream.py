@@ -100,6 +100,9 @@ sniffer:
 
 dns:
   enable: true
+  cache-algorithm: arc
+  use-hosts: true
+  use-system-hosts: false
   listen: 0.0.0.0:7874
   ipv6: false
   enhanced-mode: fake-ip
@@ -117,21 +120,18 @@ dns:
   fake-ip-filter-mode: blacklist
   respect-rules: true
   default-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
+    - tls://1.1.1.1:853
+    - tls://8.8.8.8:853
   proxy-server-nameserver:
-    - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
+    - tls://1.1.1.1:853
+    - tls://8.8.8.8:853
   nameserver:
-    - https://cloudflare-dns.com/dns-query
-    - https://dns.google/dns-query
+    - https://cloudflare-dns.com/dns-query#🚀 手动选择
+    - https://dns.google/dns-query#🚀 手动选择
+    - https://dns.quad9.net/dns-query#🚀 手动选择
   nameserver-policy:
-    "geosite:cn,private":
-      - https://dns.alidns.com/dns-query
-      - https://doh.pub/dns-query
-    "geosite:geolocation-!cn":
-      - https://cloudflare-dns.com/dns-query
-      - https://dns.google/dns-query
+    "geosite:private":
+      - system
 """
 
 FORBIDDEN_RULE_HINTS = ("广告", "去广告", "拦截", "adblock", "reject")
