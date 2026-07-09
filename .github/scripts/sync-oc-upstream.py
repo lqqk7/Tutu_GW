@@ -23,7 +23,8 @@ AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
 SHADOWROCKET_AI_RULES = Path("rules/AI-All.list")
 
 US_NODE_FILTER = r"(?i)^(?:.*9929v3.*|(?=.*AI)(?=.*美国)(?=.*家宽).*)$"
-INCLUDE_REMARKS = f"include_remarks={US_NODE_FILTER}"
+INCLUDE_REMARKS_FILTER = r"(?i)^(?:.*9929v3.*|(?=.*AI)(?=.*美国)(?=.*家宽).*|♻️ 自动选择|🎯 全球直连|🇺🇸 美国节点)$"
+INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
 
 CUSTOM_RULESETS = [
     f"ruleset=🤖 AI服务,clash-classic:{RAW_BASE}/OC_Rules/rule/AI_Classical.yaml,28800",
