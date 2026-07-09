@@ -25,14 +25,16 @@ jobs:
           grep -q 'ruleset=🖨️ AD5X切片' OC_Rules/Custom_Clash_Lite.ini
           grep -q 'Encrypted_DNS_Domain.yaml' OC_Rules/Custom_Clash_Lite.ini
           grep -q 'clash_rule_base=.*OC_Rules/Custom_Clash_Base.yaml' OC_Rules/Custom_Clash_Lite.ini
-          grep -Fq 'custom_proxy_group=🚀 手动选择`select`(?i)^(?:.*9929v3.*|(?=.*AI)(?=.*美国)(?=.*家宽).*)$' OC_Rules/Custom_Clash_Lite.ini
+          grep -Fq 'custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🎯 全球直连`[]🇺🇸 美国节点' OC_Rules/Custom_Clash_Lite.ini
+          grep -Fq 'custom_proxy_group=🇺🇸 美国节点`select`(?i)^(?:.*9929v3.*|(?=.*AI)(?=.*美国)(?=.*家宽).*)$' OC_Rules/Custom_Clash_Lite.ini
+          grep -q 'custom_proxy_group=♻️ 自动选择`url-test`.*9929v3' OC_Rules/Custom_Clash_Lite.ini
           grep -q 'respect-rules: true' OC_Rules/Custom_Clash_Base.yaml
           grep -q 'ipv6: false' OC_Rules/Custom_Clash_Base.yaml
           grep -q 'https://cloudflare-dns.com/dns-query' OC_Rules/Custom_Clash_Base.yaml
           grep -q 'DOMAIN-SUFFIX,claude.ai' OC_Rules/rule/AI_Classical.yaml
           grep -q 'DOMAIN-SUFFIX,flashforge.com' OC_Rules/rule/AD5X_Classical.yaml
           ! grep -Eq '🇭🇰|🇯🇵|🇸🇬|🇼🇸|🇰🇷|香港节点|日本节点|新加坡节点|台湾节点|韩国节点' OC_Rules/Custom_Clash_Lite.ini
-          ! grep -Eq '全部节点|美国节点' OC_Rules/Custom_Clash_Lite.ini
+          ! grep -q '全部节点' OC_Rules/Custom_Clash_Lite.ini
           ! grep -Eiq '广告|去广告|拦截|adblock|reject' OC_Rules/Custom_Clash_Lite.ini
 
       - name: Commit rules if changed

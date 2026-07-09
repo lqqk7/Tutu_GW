@@ -32,7 +32,8 @@ CUSTOM_RULESETS = [
 ]
 
 CUSTOM_PROXY_GROUPS = [
-    f"custom_proxy_group=🚀 手动选择`select`{US_NODE_FILTER}",
+    "custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🎯 全球直连`[]🇺🇸 美国节点",
+    f"custom_proxy_group=🇺🇸 美国节点`select`{US_NODE_FILTER}",
     f"custom_proxy_group=♻️ 自动选择`url-test`{US_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50",
     "custom_proxy_group=🤖 AI服务`select`[]🚀 手动选择`[]♻️ 自动选择",
     "custom_proxy_group=🖨️ AD5X切片`select`[]🎯 全球直连`[]🚀 手动选择`[]♻️ 自动选择",
@@ -249,7 +250,9 @@ def validate_generated(text: str) -> None:
         "[custom]",
         f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml",
         *CUSTOM_RULESETS,
-        f"custom_proxy_group=🚀 手动选择`select`{US_NODE_FILTER}",
+        "custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🎯 全球直连`[]🇺🇸 美国节点",
+        f"custom_proxy_group=🇺🇸 美国节点`select`{US_NODE_FILTER}",
+        f"custom_proxy_group=♻️ 自动选择`url-test`{US_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50",
         "ruleset=🤖 AI服务,clash-classic:",
         "ruleset=🖨️ AD5X切片,clash-classic:",
         "enable_rule_generator=true",
@@ -271,8 +274,8 @@ def validate_generated(text: str) -> None:
     if any(is_forbidden_line(line) for line in text.splitlines()):
         raise RuntimeError("Forbidden ad-block/reject content remains")
 
-    if "🇺🇸 美国节点" in text or "全部节点" in text:
-        raise RuntimeError("Redundant node groups remain")
+    if "全部节点" in text:
+        raise RuntimeError("Redundant all-nodes group remains")
 
 
 def main() -> int:
