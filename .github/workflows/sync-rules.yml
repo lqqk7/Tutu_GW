@@ -1,0 +1,44 @@
+name: Sync Rule Snapshot
+
+on:
+  schedule:
+    - cron: '30 20 * * 0'  # 每周一 04:30 CST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Sync upstream rules
+        run: python3 .github/scripts/sync-upstream.py
+
+      - name: Validate generated config
+        run: |
+          grep -q '^\[General\]$' rules/Tutu-GW.conf
+          grep -q '^\[Rule\]$' rules/Tutu-GW.conf
+          grep -q '^# BEGIN UPSTREAM SR_CNIP MANAGED RULES$' rules/Tutu-GW.conf
+          grep -q '^# END UPSTREAM SR_CNIP MANAGED RULES$' rules/Tutu-GW.conf
+          grep -q 'DOMAIN-SUFFIX,claude.ai,PROXY' rules/Tutu-GW.conf
+          grep -q '^\[URL Rewrite\]$' rules/Tutu-GW.conf
+          grep -q 'google\.com\.hk' rules/Tutu-GW.conf
+          grep -q '^FINAL,PROXY$' rules/Tutu-GW.conf
+
+      - name: Commit rules if changed
+        run: |
+          if git diff --quiet -- rules/Tutu-GW.conf; then
+            echo "No upstream rule changes."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add rules/Tutu-GW.conf
+          git commit -m "chore: sync rule snapshot"
+          git push
