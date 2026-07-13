@@ -17,7 +17,7 @@ class UsNodeFilterTest(unittest.TestCase):
     def test_only_keeps_requested_us_nodes(self):
         pattern = re.compile(SYNC.US_NODE_FILTER)
 
-        for name in ("美国-家宽-专线", "US-AIGC-9929v3-TUTUGW"):
+        for name in ("美国-家宽-专线", "US-AIGC-9929v3-TUTUGW", "US-AIGC-9929v4-TUTUGW"):
             self.assertIsNotNone(pattern.fullmatch(name), name)
 
         for name in ("美国-家宽-小白", "US-AIGC-9929v3-小白", "US-General-4837v2"):
