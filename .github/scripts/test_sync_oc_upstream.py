@@ -23,6 +23,12 @@ class UsNodeFilterTest(unittest.TestCase):
         for name in ("美国-家宽-小白", "US-AIGC-9929v3-小白", "US-General-4837v2"):
             self.assertIsNone(pattern.fullmatch(name), name)
 
+    def test_excludes_cf_acceleration_and_hy2_nodes(self):
+        pattern = re.compile(SYNC.US_NODE_FILTER)
+
+        for name in ("美国-家宽-cf加速", "US-AIGC-9929v3-HY2"):
+            self.assertIsNone(pattern.fullmatch(name), name)
+
     def test_local_config_uses_the_shared_filter(self):
         config = (ROOT / "OC_Rules/Custom_Clash_Lite.ini").read_text()
 
