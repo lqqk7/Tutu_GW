@@ -22,8 +22,8 @@ AI_PROVIDER = Path("OC_Rules/rule/AI_Classical.yaml")
 AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
 SHADOWROCKET_AI_RULES = Path("rules/AI-All.list")
 
-US_NODE_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2))(?:.*9929v3.*|(?=.*美国)(?=.*家宽).*)$"
-INCLUDE_REMARKS_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2))(?:.*9929v3.*|(?=.*美国)(?=.*家宽).*|♻️ 自动选择|🎯 全球直连|🇺🇸 美国节点)$"
+US_NODE_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*9929v3.*|(?=.*美国)(?=.*家宽).*)$"
+INCLUDE_REMARKS_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*9929v3.*|(?=.*美国)(?=.*家宽).*|♻️ 自动选择|🎯 全球直连|🇺🇸 美国节点)$"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
 
 CUSTOM_RULESETS = [
