@@ -17,10 +17,15 @@ class UsNodeFilterTest(unittest.TestCase):
     def test_only_keeps_requested_us_nodes(self):
         pattern = re.compile(SYNC.US_NODE_FILTER)
 
-        for name in ("美国-家宽-专线", "US-AIGC-9929v3-TUTUGW", "US-AIGC-9929v4-TUTUGW"):
+        for name in (
+            "美国-家宽-专线",
+            "US-AIGC-9929v3-TUTUGW",
+            "US-AIGC-9929v4-TUTUGW",
+            "US-General-4837v2-TUTUGW",
+        ):
             self.assertIsNotNone(pattern.fullmatch(name), name)
 
-        for name in ("美国-家宽-小白", "US-AIGC-9929v3-小白", "US-General-4837v2"):
+        for name in ("美国-家宽-小白", "US-AIGC-9929v3-小白", "US-General-4837v1"):
             self.assertIsNone(pattern.fullmatch(name), name)
 
     def test_excludes_cf_acceleration_and_hy2_nodes(self):
