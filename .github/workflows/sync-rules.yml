@@ -23,6 +23,10 @@ jobs:
         run: |
           grep -q '^\[General\]$' rules/Tutu-GW.conf
           grep -q '^\[Rule\]$' rules/Tutu-GW.conf
+          grep -Fqx 'dns-server = https://cloudflare-dns.com/dns-query#proxy,https://dns.google/dns-query#proxy' rules/Tutu-GW.conf
+          grep -Fqx 'fallback-dns-server = https://cloudflare-dns.com/dns-query#proxy,https://dns.google/dns-query#proxy' rules/Tutu-GW.conf
+          grep -Fqx 'proxy-dns-server = 1.1.1.1,8.8.8.8' rules/Tutu-GW.conf
+          ! grep -Eiq '^((fallback-)?dns-server)[[:space:]]*=.*(dns\.alidns\.com|doh\.pub)' rules/Tutu-GW.conf
           grep -q '^# BEGIN UPSTREAM SR_CNIP MANAGED RULES$' rules/Tutu-GW.conf
           grep -q '^# END UPSTREAM SR_CNIP MANAGED RULES$' rules/Tutu-GW.conf
           grep -q 'DOMAIN-SUFFIX,claude.ai,PROXY' rules/Tutu-GW.conf
