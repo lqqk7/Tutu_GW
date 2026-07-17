@@ -6,6 +6,10 @@ from pathlib import Path
 
 
 CONFIG = Path("rules/Tutu-GW.conf")
+CHINA_DOMAIN_SET = (
+    "DOMAIN-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/"
+    "rule/Shadowrocket/ChinaMaxNoIP/ChinaMaxNoIP_Domain.list,DIRECT"
+)
 CHINA_RULE_SET = (
     "RULE-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/"
     "rule/Shadowrocket/ChinaMaxNoIP/ChinaMaxNoIP.list,DIRECT"
@@ -75,9 +79,23 @@ def main() -> int:
         "public IPv6 route expressed with IP-CIDR bypasses the reject policy",
     )
 
-    require(CHINA_RULE_SET in rules, "missing ChinaMaxNoIP DIRECT rule set")
+    china_domain_set_rules = [
+        rule for rule in effective_rules if "ChinaMaxNoIP_Domain.list" in rule
+    ]
+    require(
+        china_domain_set_rules == [CHINA_DOMAIN_SET],
+        "ChinaMaxNoIP_Domain.list must appear exactly once as the DIRECT DOMAIN-SET",
+    )
+    china_rule_set_rules = [
+        rule for rule in effective_rules if "ChinaMaxNoIP.list" in rule
+    ]
+    require(
+        china_rule_set_rules == [CHINA_RULE_SET],
+        "ChinaMaxNoIP.list must appear exactly once as the DIRECT RULE-SET",
+    )
     require(MANAGED_START in rules, "missing managed upstream marker")
-    china_index = rules.index(CHINA_RULE_SET)
+    china_domain_index = rules.index(CHINA_DOMAIN_SET)
+    china_rule_index = rules.index(CHINA_RULE_SET)
     managed_index = rules.index(MANAGED_START)
     local_proxy_indices = [
         index
@@ -86,12 +104,18 @@ def main() -> int:
     ]
     require(local_proxy_indices, "missing local explicit PROXY rules")
     require(
-        max(local_proxy_indices) < china_index,
-        "China mainland DIRECT rule set must follow all local explicit PROXY rules",
+        max(local_proxy_indices) < min(china_domain_index, china_rule_index),
+        "China mainland DIRECT sets must follow all local explicit PROXY rules",
     )
     require(
-        china_index < managed_index,
-        "China mainland DIRECT rule set must precede the upstream PROXY snapshot",
+        max(china_domain_index, china_rule_index) < managed_index,
+        "China mainland DIRECT sets must precede the upstream PROXY snapshot",
+    )
+    china_domain_effective_index = effective_rules.index(CHINA_DOMAIN_SET)
+    china_rule_effective_index = effective_rules.index(CHINA_RULE_SET)
+    require(
+        abs(china_domain_effective_index - china_rule_effective_index) == 1,
+        "ChinaMaxNoIP DOMAIN-SET and RULE-SET must be adjacent",
     )
     for rule in (
         "DOMAIN-SUFFIX,cn,DIRECT",
