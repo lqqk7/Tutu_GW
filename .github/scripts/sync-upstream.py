@@ -46,6 +46,11 @@ def normalize_rule(line: str) -> str | None:
     if len(parts) < 3:
         return None
 
+    # The client deliberately rejects all public IPv6. Do not import upstream
+    # IPv6 routes, including IPv6 networks expressed with IP-CIDR.
+    if rule_type == "IP-CIDR6" or (rule_type == "IP-CIDR" and ":" in parts[1]):
+        return None
+
     if parts[-1].lower() == "no-resolve":
         policy_index = -2
     else:

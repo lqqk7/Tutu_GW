@@ -21,6 +21,7 @@ jobs:
 
       - name: Validate generated config
         run: |
+          python3 .github/scripts/check-shadowrocket_config.py
           grep -q '^\[General\]$' rules/Tutu-GW.conf
           grep -q '^\[Rule\]$' rules/Tutu-GW.conf
           grep -Fqx 'dns-server = https://cloudflare-dns.com/dns-query#proxy,https://dns.google/dns-query#proxy' rules/Tutu-GW.conf
