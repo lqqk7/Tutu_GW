@@ -17,6 +17,7 @@ START_MARKER = "# BEGIN UPSTREAM SR_CNIP MANAGED RULES"
 END_MARKER = "# END UPSTREAM SR_CNIP MANAGED RULES"
 INSERT_ANCHOR = "# China direct, everything else proxy"
 RULE_PREFIXES = ("DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "IP-CIDR", "IP-CIDR6", "GEOIP", "FINAL")
+PROXY_POLICY = "fallback"
 
 
 def fetch_text(url: str) -> str:
@@ -58,7 +59,7 @@ def normalize_rule(line: str) -> str | None:
 
     policy = parts[policy_index]
     if policy.lower() == "proxy":
-        parts[policy_index] = "PROXY"
+        parts[policy_index] = PROXY_POLICY
     elif policy.lower() == "direct":
         parts[policy_index] = "DIRECT"
     elif policy.upper() == "REJECT":
@@ -96,7 +97,23 @@ def upstream_rules(text: str) -> list[str]:
     return rules
 
 
+def validate_managed_markers(text: str) -> tuple[int, int] | None:
+    lines = text.splitlines()
+    start_indices = [index for index, line in enumerate(lines) if line.strip() == START_MARKER]
+    end_indices = [index for index, line in enumerate(lines) if line.strip() == END_MARKER]
+
+    if not start_indices and not end_indices:
+        return None
+    if len(start_indices) != 1 or len(end_indices) != 1:
+        raise RuntimeError("Managed upstream markers must be unique and paired")
+    if start_indices[0] >= end_indices[0]:
+        raise RuntimeError("Managed upstream markers are out of order")
+
+    return start_indices[0], end_indices[0]
+
+
 def managed_rules(text: str) -> list[str]:
+    validate_managed_markers(text)
     rules: list[str] = []
     in_block = False
 
@@ -163,12 +180,8 @@ def merged_managed_block(current_text: str, fetched_rules: list[str]) -> list[st
 
 def replace_or_insert_block(current_text: str, block_lines: list[str]) -> str:
     lines = current_text.rstrip("\n").splitlines()
-
-    try:
-        start = lines.index(START_MARKER)
-        end = lines.index(END_MARKER)
-    except ValueError:
-        start = end = -1
+    marker_bounds = validate_managed_markers(current_text)
+    start, end = marker_bounds if marker_bounds is not None else (-1, -1)
 
     if start != -1 and end != -1 and start < end:
         next_index = end + 1

@@ -43,9 +43,40 @@ LOCAL_IPV6_RULES = (
     "IP-CIDR6,fc00::/7,DIRECT,no-resolve",
     "IP-CIDR6,fe80::/10,DIRECT,no-resolve",
 )
+FLASHFORGE_DIRECT_RULES = (
+    "DOMAIN-SUFFIX,flashforge.com,DIRECT",
+    "DOMAIN-SUFFIX,fdmcloud.flashforge.com,DIRECT",
+    "DOMAIN-SUFFIX,voxelshare.com,DIRECT",
+    "DOMAIN,flashforge.oss-us-east-1.aliyuncs.com,DIRECT",
+    "DOMAIN-SUFFIX,netease.im,DIRECT",
+    "DOMAIN,httpdns.n.netease.com,DIRECT",
+    "DOMAIN,nos.netease.com,DIRECT",
+    "DOMAIN-SUFFIX,chatnos.com,DIRECT",
+)
 PUBLIC_IPV6_REJECT = "IP-CIDR6,::/0,REJECT,no-resolve"
 MANAGED_START = "# BEGIN UPSTREAM SR_CNIP MANAGED RULES"
-FINAL_RULE = "FINAL,PROXY"
+MANAGED_END = "# END UPSTREAM SR_CNIP MANAGED RULES"
+PROXY_POLICY = "fallback"
+FINAL_RULE = f"FINAL,{PROXY_POLICY}"
+EXPECTED_DOH = (
+    "https://cloudflare-dns.com/dns-query#proxy=fallback,"
+    "https://dns.google/dns-query#proxy=fallback"
+)
+EXPECTED_PROXY_GROUP = (
+    "fallback = fallback,US-9929V3-TUTU,US-4837V2-TUTU,US-9929V4-TUTU,"
+    "专线A1-美国7-家宽静态IP-适合AI-CLAUDE等TIKTOK数据好银行全解锁-3倍率,"
+    "专线A1-美国7A-家宽静态IP-适合AI-CLAUDE等TIKTOK数据好银行全解锁-3倍率,"
+    "专线A1-美国8-双ISP家宽IP-适合AI-CLAUDE等-3倍率,"
+    "专线A1-美国9-双ISP家宽IP-适合AI-CLAUDE等-3倍率,"
+    "专线A1-美国6-家宽住宅IP-适合AI-CLAUDE等TIKTOK数据好银行全解锁-3倍率,"
+    "D美国8-3倍率-双ISP家宽IP适合AI-CLAUDE等TIKTOK数据好银行全解锁,"
+    "D美国4-双ISP家宽IP-适合AI-CLAUDE等-3倍率,"
+    "D美国6-4倍率-家宽住宅IP适合AI-CLAUDE等TIKTOK数据好银行全解锁,"
+    "D美国7-4倍率-家宽住宅IP适合AI-CLAUDE等TIKTOK数据好银行全解锁,"
+    "D美国9-4倍率-双ISP家宽IP适合AI-CLAUDE等TIKTOK数据好银行全解锁,"
+    "D美国7A-4倍率-家宽住宅IP适合AI-CLAUDE等TIKTOK数据好银行全解锁,"
+    "timeout=5,interval=600,url=http://www.gstatic.com/generate_204"
+)
 
 
 def require(condition: bool, message: str) -> None:
@@ -76,16 +107,71 @@ def ipv6_cidr_rules(lines: list[str]) -> list[str]:
     return matches
 
 
+def rule_policy(rule: str) -> str:
+    parts = rule.split(",")
+    return parts[-2] if parts[-1].lower() == "no-resolve" else parts[-1]
+
+
 def main() -> int:
     lines = [line.strip() for line in CONFIG.read_text(encoding="utf-8").splitlines()]
     general = section(lines, "[General]")
+    require(
+        lines.count("[Proxy Group]") == 1,
+        "[Proxy Group] section header must occur exactly once",
+    )
+    proxy_groups = section(lines, "[Proxy Group]")
     rules = section(lines, "[Rule]")
+    require(
+        proxy_groups.count(EXPECTED_PROXY_GROUP) == 1
+        and lines.count(EXPECTED_PROXY_GROUP) == 1,
+        "[Proxy Group] must contain exactly one canonical fallback definition",
+    )
+    fallback_parts = [part.strip() for part in EXPECTED_PROXY_GROUP.split(" = ", 1)[1].split(",")]
+    require(fallback_parts[0] == "fallback", "fallback group must use the fallback type")
+    require(
+        fallback_parts[1:4] == ["US-9929V3-TUTU", "US-4837V2-TUTU", "US-9929V4-TUTU"],
+        "the three self-hosted nodes must be first in the fallback group",
+    )
+    options = fallback_parts[-3:]
+    require(len(fallback_parts[1:-3]) == 14, "fallback group must contain exactly 14 nodes")
+    require(
+        options == ["timeout=5", "interval=600", "url=http://www.gstatic.com/generate_204"],
+        "fallback health-check options must be timeout=5, interval=600, and the expected URL",
+    )
+    require(
+        general.count(f"dns-server = {EXPECTED_DOH}") == 1,
+        "dns-server DoH endpoints must use #proxy=fallback",
+    )
+    require(
+        general.count(f"fallback-dns-server = {EXPECTED_DOH}") == 1,
+        "fallback-dns-server DoH endpoints must use #proxy=fallback",
+    )
     require(
         general.count("always-ip-address = true") == 1
         and lines.count("always-ip-address = true") == 1,
         "[General] must contain exactly one always-ip-address = true",
     )
     effective_rules = [line for line in rules if line and not line.startswith("#")]
+    require(
+        all(rule_policy(rule) != "PROXY" for rule in effective_rules),
+        "[Rule] must not contain the unbound PROXY policy",
+    )
+    require(
+        all(rule_policy(rule) in {"DIRECT", "REJECT", PROXY_POLICY} for rule in effective_rules),
+        "[Rule] contains a policy other than DIRECT, REJECT, or fallback",
+    )
+    flashforge_targets = {
+        tuple(rule.split(",")[:2]) for rule in FLASHFORGE_DIRECT_RULES
+    }
+    flashforge_rules = [
+        rule
+        for rule in effective_rules
+        if tuple(rule.split(",")[:2]) in flashforge_targets
+    ]
+    require(
+        flashforge_rules == list(FLASHFORGE_DIRECT_RULES),
+        "Flashforge cloud and MQTT rules must occur exactly once and remain DIRECT",
+    )
 
     require("ipv6 = false" in lines, "missing ipv6 = false")
     require("prefer-ipv6 = false" in lines, "missing prefer-ipv6 = false")
@@ -171,23 +257,32 @@ def main() -> int:
         china_rule_set_rules == [CHINA_RULE_SET],
         "ChinaMaxNoIP.list must appear exactly once as the DIRECT RULE-SET",
     )
-    require(MANAGED_START in rules, "missing managed upstream marker")
+    require(
+        rules.count(MANAGED_START) == 1 and rules.count(MANAGED_END) == 1,
+        "managed upstream markers must each occur exactly once",
+    )
     china_domain_index = rules.index(CHINA_DOMAIN_SET)
     china_rule_index = rules.index(CHINA_RULE_SET)
     managed_index = rules.index(MANAGED_START)
     local_proxy_indices = [
         index
         for index, rule in enumerate(rules[:managed_index])
-        if ",PROXY" in rule and not rule.startswith("#")
+        if not rule.startswith("#") and rule_policy(rule) == PROXY_POLICY
     ]
-    require(local_proxy_indices, "missing local explicit PROXY rules")
+    require(local_proxy_indices, "missing local explicit fallback rules")
     require(
         max(local_proxy_indices) < min(china_domain_index, china_rule_index),
-        "China mainland DIRECT sets must follow all local explicit PROXY rules",
+        "China mainland DIRECT sets must follow all local explicit fallback rules",
     )
     require(
         max(china_domain_index, china_rule_index) < managed_index,
-        "China mainland DIRECT sets must precede the upstream PROXY snapshot",
+        "China mainland DIRECT sets must precede the upstream fallback snapshot",
+    )
+    require(managed_index < rules.index(MANAGED_END), "managed upstream markers are out of order")
+    managed_rules = rules[managed_index + 1 : rules.index(MANAGED_END)]
+    require(
+        all(",PROXY" not in rule for rule in managed_rules),
+        "managed upstream block must not contain PROXY",
     )
     china_domain_effective_index = effective_rules.index(CHINA_DOMAIN_SET)
     china_rule_effective_index = effective_rules.index(CHINA_RULE_SET)
@@ -204,7 +299,7 @@ def main() -> int:
         require(rule in rules, f"missing China DIRECT fallback: {rule}")
         require(rules.index(rule) < rules.index(FINAL_RULE), f"China DIRECT fallback must precede FINAL: {rule}")
 
-    require(effective_rules[-1] == FINAL_RULE, "FINAL,PROXY must be the last rule")
+    require(effective_rules[-1] == FINAL_RULE, "FINAL,fallback must be the last rule")
 
     print("Shadowrocket config checks passed")
     return 0
