@@ -2,10 +2,19 @@
 from __future__ import annotations
 
 import sys
+from ipaddress import IPv6Network, ip_network
 from pathlib import Path
 
 
 CONFIG = Path("rules/Tutu-GW.conf")
+IPV6_RULE_LISTS = (
+    Path("rules/AI-All.list"),
+    Path("rules/Anthropic.list"),
+)
+IPV6_SAFE_MODULES = (
+    Path("modules/AI-All.sgmodule"),
+    Path("modules/Anthropic.sgmodule"),
+)
 CHINA_DOMAIN_SET = (
     "DOMAIN-SET,https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/"
     "rule/Shadowrocket/ChinaMaxNoIP/ChinaMaxNoIP_Domain.list,DIRECT"
@@ -44,14 +53,38 @@ def require(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
-def main() -> int:
-    lines = [line.strip() for line in CONFIG.read_text(encoding="utf-8").splitlines()]
-    rule_start = lines.index("[Rule]")
-    rule_end = next(
-        (index for index in range(rule_start + 1, len(lines)) if lines[index].startswith("[")),
+def section(lines: list[str], name: str) -> list[str]:
+    start = lines.index(name)
+    end = next(
+        (index for index in range(start + 1, len(lines)) if lines[index].startswith("[")),
         len(lines),
     )
-    rules = lines[rule_start + 1 : rule_end]
+    return lines[start + 1 : end]
+
+
+def ipv6_cidr_rules(lines: list[str]) -> list[str]:
+    matches: list[str] = []
+    for line in lines:
+        if not line.startswith(("IP-CIDR,", "IP-CIDR6,")):
+            continue
+        parts = line.split(",")
+        if len(parts) < 2:
+            continue
+        network = ip_network(parts[1], strict=False)
+        if isinstance(network, IPv6Network):
+            matches.append(line)
+    return matches
+
+
+def main() -> int:
+    lines = [line.strip() for line in CONFIG.read_text(encoding="utf-8").splitlines()]
+    general = section(lines, "[General]")
+    rules = section(lines, "[Rule]")
+    require(
+        general.count("always-ip-address = true") == 1
+        and lines.count("always-ip-address = true") == 1,
+        "[General] must contain exactly one always-ip-address = true",
+    )
     effective_rules = [line for line in rules if line and not line.startswith("#")]
 
     require("ipv6 = false" in lines, "missing ipv6 = false")
@@ -79,6 +112,51 @@ def main() -> int:
         "public IPv6 route expressed with IP-CIDR bypasses the reject policy",
     )
 
+    for rule_list in IPV6_RULE_LISTS:
+        list_lines = [
+            line.strip() for line in rule_list.read_text(encoding="utf-8").splitlines()
+        ]
+        ipv6_routes = ipv6_cidr_rules(list_lines)
+        require(
+            not ipv6_routes,
+            f"{rule_list} must not contain IPv6 CIDR rules: {ipv6_routes}",
+        )
+
+    for module in IPV6_SAFE_MODULES:
+        module_lines = [
+            line.strip() for line in module.read_text(encoding="utf-8").splitlines()
+        ]
+        module_rules = [
+            line for line in section(module_lines, "[Rule]") if line and not line.startswith("#")
+        ]
+        require(
+            module_rules.count(PUBLIC_IPV6_REJECT) == 1,
+            f"{module} must contain exactly one public IPv6 reject",
+        )
+        expected_ipv6_prefix = [*LOCAL_IPV6_RULES, PUBLIC_IPV6_REJECT]
+        require(
+            module_rules[: len(expected_ipv6_prefix)] == expected_ipv6_prefix,
+            f"{module} must start with local IPv6 exceptions followed by the public reject",
+        )
+        module_ipv6_routes = ipv6_cidr_rules(module_rules)
+        require(
+            module_ipv6_routes == expected_ipv6_prefix,
+            f"{module} must not contain other IPv6 DIRECT/PROXY rules: {module_ipv6_routes}",
+        )
+        proxy_rule_set_indices = [
+            index
+            for index, rule in enumerate(module_rules)
+            if rule.startswith("RULE-SET,") and rule.endswith(",PROXY")
+        ]
+        require(proxy_rule_set_indices, f"{module} must contain a PROXY RULE-SET")
+        require(
+            proxy_rule_set_indices[0] == len(expected_ipv6_prefix),
+            f"{module} first PROXY RULE-SET must immediately follow the IPv6 safety prefix",
+        )
+        require(
+            module_rules.index(PUBLIC_IPV6_REJECT) < min(proxy_rule_set_indices),
+            f"{module} public IPv6 reject must precede every PROXY RULE-SET",
+        )
     china_domain_set_rules = [
         rule for rule in effective_rules if "ChinaMaxNoIP_Domain.list" in rule
     ]
