@@ -53,6 +53,52 @@ FLASHFORGE_DIRECT_RULES = (
     "DOMAIN,nos.netease.com,DIRECT",
     "DOMAIN-SUFFIX,chatnos.com,DIRECT",
 )
+DOUYIN_DIRECT_RULES = (
+    "DOMAIN-SUFFIX,douyin.com,DIRECT",
+    "DOMAIN-SUFFIX,douyinpay.com,DIRECT",
+    "DOMAIN-SUFFIX,douyinec.com,DIRECT",
+    "DOMAIN-SUFFIX,douyincdn.com,DIRECT",
+    "DOMAIN-SUFFIX,douyinpic.com,DIRECT",
+    "DOMAIN-SUFFIX,douyinstatic.com,DIRECT",
+    "DOMAIN-SUFFIX,douyinvod.com,DIRECT",
+    "DOMAIN-SUFFIX,idouyinvod.com,DIRECT",
+    "DOMAIN-SUFFIX,snssdk.com,DIRECT",
+    "DOMAIN-SUFFIX,amemv.com,DIRECT",
+    "DOMAIN-SUFFIX,pstatp.com,DIRECT",
+    "DOMAIN-SUFFIX,toutiao.com,DIRECT",
+    "DOMAIN-SUFFIX,ecombdapi.com,DIRECT",
+    "DOMAIN-SUFFIX,jinritemai.com,DIRECT",
+    "DOMAIN-SUFFIX,zijieapi.com,DIRECT",
+    "DOMAIN-SUFFIX,bytegoofy.com,DIRECT",
+    "DOMAIN-SUFFIX,bytedanceapi.com,DIRECT",
+)
+APPLE_DIRECT_RULES = (
+    "DOMAIN,account.apple.com,DIRECT",
+    "DOMAIN,appleid.apple.com,DIRECT",
+    "DOMAIN,appleid.cdn-apple.com,DIRECT",
+    "DOMAIN,idmsa.apple.com,DIRECT",
+    "DOMAIN,gsa.apple.com,DIRECT",
+    "DOMAIN,phobos.apple.com,DIRECT",
+    "DOMAIN-SUFFIX,itunes.apple.com,DIRECT",
+    "DOMAIN-SUFFIX,apps.apple.com,DIRECT",
+    "DOMAIN-SUFFIX,push.apple.com,DIRECT",
+    "DOMAIN-SUFFIX,icloud.apple.com,DIRECT",
+    "DOMAIN-SUFFIX,icloud.com,DIRECT",
+    "DOMAIN-SUFFIX,icloud.com.cn,DIRECT",
+    "DOMAIN-SUFFIX,icloud-content.com,DIRECT",
+    "DOMAIN-SUFFIX,apple-cloudkit.com,DIRECT",
+    "DOMAIN-SUFFIX,mzstatic.com,DIRECT",
+    "DOMAIN-SUFFIX,aaplimg.com,DIRECT",
+    "DOMAIN-SUFFIX,apple-dns.net,DIRECT",
+    "DOMAIN-SUFFIX,push-apple.com.akadns.net,DIRECT",
+    "DOMAIN-SUFFIX,itunes-apple.com.akadns.net,DIRECT",
+    "DOMAIN-SUFFIX,icloud.com.akadns.net,DIRECT",
+    "IP-CIDR,17.249.0.0/16,DIRECT,no-resolve",
+    "IP-CIDR,17.252.0.0/16,DIRECT,no-resolve",
+    "IP-CIDR,17.57.144.0/22,DIRECT,no-resolve",
+    "IP-CIDR,17.188.128.0/18,DIRECT,no-resolve",
+    "IP-CIDR,17.188.20.0/23,DIRECT,no-resolve",
+)
 PUBLIC_IPV6_REJECT = "IP-CIDR6,::/0,REJECT,no-resolve"
 MANAGED_START = "# BEGIN UPSTREAM SR_CNIP MANAGED RULES"
 MANAGED_END = "# END UPSTREAM SR_CNIP MANAGED RULES"
@@ -173,6 +219,16 @@ def main() -> int:
         "Flashforge cloud and MQTT rules must occur exactly once and remain DIRECT",
     )
 
+    for service, direct_rules in (
+        ("Douyin", DOUYIN_DIRECT_RULES),
+        ("Apple", APPLE_DIRECT_RULES),
+    ):
+        for rule in direct_rules:
+            require(
+                effective_rules.count(rule) == 1,
+                f"{service} rule must occur exactly once and remain DIRECT: {rule}",
+            )
+
     require("ipv6 = false" in lines, "missing ipv6 = false")
     require("prefer-ipv6 = false" in lines, "missing prefer-ipv6 = false")
     bypass_tun = next((line for line in lines if line.startswith("bypass-tun = ")), "")
@@ -264,6 +320,24 @@ def main() -> int:
     china_domain_index = rules.index(CHINA_DOMAIN_SET)
     china_rule_index = rules.index(CHINA_RULE_SET)
     managed_index = rules.index(MANAGED_START)
+    final_index = rules.index(FINAL_RULE)
+    for service, direct_rules in (
+        ("Douyin", DOUYIN_DIRECT_RULES),
+        ("Apple", APPLE_DIRECT_RULES),
+    ):
+        direct_indices = [rules.index(rule) for rule in direct_rules]
+        require(
+            max(direct_indices) < min(china_domain_index, china_rule_index, managed_index, final_index),
+            f"{service} DIRECT rules must precede China sets, managed upstream rules, and FINAL",
+        )
+    require(
+        not any(rule.startswith("IP-CIDR,17.0.0.0/8,") for rule in rules),
+        "Apple DIRECT routing must use narrow APNs IPv4 ranges, not 17.0.0.0/8",
+    )
+    require(
+        "DOMAIN-SUFFIX,apple.com,DIRECT" not in rules,
+        "Apple DIRECT routing must use narrow service endpoints, not all of apple.com",
+    )
     local_proxy_indices = [
         index
         for index, rule in enumerate(rules[:managed_index])
