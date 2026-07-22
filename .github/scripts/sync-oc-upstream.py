@@ -33,9 +33,9 @@ EXCLUDE_REMARKS_FILTER = r"(?i)(?:小白|cf加速|hy2|D美国5)"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
 EXCLUDE_REMARKS = f"exclude_remarks={EXCLUDE_REMARKS_FILTER}"
 
-SELF_HOSTED_RULES = "`".join(f"[]{name}" for name in SELF_HOSTED_NODES)
-MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`[]🏠 自建优先`{SELF_HOSTED_RULES}`[]✈️ 机场自动`[]🎯 全球直连"
-SELF_HOSTED_FALLBACK_GROUP = f"custom_proxy_group=🏠 自建优先`fallback`{SELF_HOSTED_RULES}`[]✈️ 机场自动`https://cp.cloudflare.com/generate_204`300,,50"
+SELF_HOSTED_NODE_FILTER = rf"(?i)^(?:{'|'.join(SELF_HOSTED_NODES)})$"
+MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`[]🏠 自建优先`{SELF_HOSTED_NODE_FILTER}`[]✈️ 机场自动`[]🎯 全球直连"
+SELF_HOSTED_FALLBACK_GROUP = f"custom_proxy_group=🏠 自建优先`fallback`{SELF_HOSTED_NODE_FILTER}`[]✈️ 机场自动`https://cp.cloudflare.com/generate_204`300,,50"
 AIRPORT_AUTO_GROUP = f"custom_proxy_group=✈️ 机场自动`url-test`{AIRPORT_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50"
 
 CUSTOM_RULESETS = [
