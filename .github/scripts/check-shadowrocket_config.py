@@ -109,7 +109,7 @@ EXPECTED_DOH = (
     "https://dns.google/dns-query#proxy=fallback"
 )
 EXPECTED_PROXY_GROUP = (
-    "fallback = fallback,US-4837v2-TUTU,US-9929v3-TUTU,US-9929v4-TUTU,"
+    "fallback = fallback,US-9929v3-TUTU,US-4837v2-TUTU,US-9929v4-TUTU,"
     "专线 A1-美国 6-家宽住宅 IP-适合 AI-Claude 等 Tiktok 数据好银行全解锁-3 倍率,"
     "专线 A1-美国 7-家宽静态 IP-适合 AI-Claude 等 Tiktok 数据好银行全解锁-3 倍率,"
     "专线 A1-美国 7a-家宽静态 IP-适合 AI-Claude 等 Tiktok 数据好银行全解锁-3 倍率,"
@@ -169,7 +169,7 @@ def main() -> int:
     fallback_parts = [part.strip() for part in EXPECTED_PROXY_GROUP.split(" = ", 1)[1].split(",")]
     require(fallback_parts[0] == "fallback", "fallback group must use the fallback type")
     require(
-        fallback_parts[1:4] == ["US-4837v2-TUTU", "US-9929v3-TUTU", "US-9929v4-TUTU"],
+        fallback_parts[1:4] == ["US-9929v3-TUTU", "US-4837v2-TUTU", "US-9929v4-TUTU"],
         "the three self-hosted nodes must be first in the fallback group",
     )
     options = fallback_parts[-3:]
