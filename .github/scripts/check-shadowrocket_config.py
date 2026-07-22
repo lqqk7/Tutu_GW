@@ -109,18 +109,12 @@ EXPECTED_DOH = (
     "https://dns.google/dns-query#proxy=fallback"
 )
 EXPECTED_PROXY_GROUP = (
-    "fallback = fallback,US-9929V3-TUTU,US-4837V2-TUTU,US-9929V4-TUTU,"
-    "专线A1-美国7-家宽静态IP-适合AI-CLAUDE等TIKTOK数据好银行全解锁-3倍率,"
-    "专线A1-美国7A-家宽静态IP-适合AI-CLAUDE等TIKTOK数据好银行全解锁-3倍率,"
-    "专线A1-美国8-双ISP家宽IP-适合AI-CLAUDE等-3倍率,"
-    "专线A1-美国9-双ISP家宽IP-适合AI-CLAUDE等-3倍率,"
-    "专线A1-美国6-家宽住宅IP-适合AI-CLAUDE等TIKTOK数据好银行全解锁-3倍率,"
-    "D美国8-3倍率-双ISP家宽IP适合AI-CLAUDE等TIKTOK数据好银行全解锁,"
-    "D美国4-双ISP家宽IP-适合AI-CLAUDE等-3倍率,"
-    "D美国6-4倍率-家宽住宅IP适合AI-CLAUDE等TIKTOK数据好银行全解锁,"
-    "D美国7-4倍率-家宽住宅IP适合AI-CLAUDE等TIKTOK数据好银行全解锁,"
-    "D美国9-4倍率-双ISP家宽IP适合AI-CLAUDE等TIKTOK数据好银行全解锁,"
-    "D美国7A-4倍率-家宽住宅IP适合AI-CLAUDE等TIKTOK数据好银行全解锁,"
+    "fallback = fallback,US-4837v2-TUTU,US-9929v3-TUTU,US-9929v4-TUTU,"
+    "专线 A1-美国 6-家宽住宅 IP-适合 AI-Claude 等 Tiktok 数据好银行全解锁-3 倍率,"
+    "专线 A1-美国 7-家宽静态 IP-适合 AI-Claude 等 Tiktok 数据好银行全解锁-3 倍率,"
+    "专线 A1-美国 7a-家宽静态 IP-适合 AI-Claude 等 Tiktok 数据好银行全解锁-3 倍率,"
+    "专线 A1-美国 8-双 ISP 家宽 IP-适合 AI-Claude 等-3 倍率,"
+    "专线 A1-美国 9-双 ISP 家宽 IP-适合 AI-Claude 等-3 倍率,"
     "timeout=5,interval=600,url=http://www.gstatic.com/generate_204"
 )
 
@@ -175,11 +169,16 @@ def main() -> int:
     fallback_parts = [part.strip() for part in EXPECTED_PROXY_GROUP.split(" = ", 1)[1].split(",")]
     require(fallback_parts[0] == "fallback", "fallback group must use the fallback type")
     require(
-        fallback_parts[1:4] == ["US-9929V3-TUTU", "US-4837V2-TUTU", "US-9929V4-TUTU"],
+        fallback_parts[1:4] == ["US-4837v2-TUTU", "US-9929v3-TUTU", "US-9929v4-TUTU"],
         "the three self-hosted nodes must be first in the fallback group",
     )
     options = fallback_parts[-3:]
-    require(len(fallback_parts[1:-3]) == 14, "fallback group must contain exactly 14 nodes")
+    fallback_nodes = fallback_parts[1:-3]
+    require(len(fallback_nodes) == 8, "fallback group must contain exactly 8 nodes")
+    require(
+        not any(node.startswith(("D美国", "专线A1-美国")) for node in fallback_nodes),
+        "fallback group must not contain legacy airport node names",
+    )
     require(
         options == ["timeout=5", "interval=600", "url=http://www.gstatic.com/generate_204"],
         "fallback health-check options must be timeout=5, interval=600, and the expected URL",
