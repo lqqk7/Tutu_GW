@@ -22,17 +22,18 @@ AI_PROVIDER = Path("OC_Rules/rule/AI_Classical.yaml")
 AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
 SHADOWROCKET_AI_RULES = Path("rules/AI-All.list")
 
-SELF_HOSTED_NODE_FILTERS = (
-    r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*9929v3.*$",
-    r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*4837v2.*$",
-    r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*9929v4.*$",
+SELF_HOSTED_NODES = (
+    "US-9929v3-TUTUGW",
+    "US-4837v2-TUTUGW",
+    "US-9929v4-TUTUGW",
 )
-AIRPORT_NODE_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5|9929v[34]|4837v2))(?=.*美国)(?=.*专线)(?=.*AI).*$"
-ELIGIBLE_NODE_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2).*|(?=.*美国)(?=.*专线)(?=.*AI).*)$"
-INCLUDE_REMARKS_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2).*|(?=.*美国)(?=.*专线)(?=.*AI).*|🏠 自建优先|✈️ 机场自动|🎯 全球直连)$"
+AIRPORT_NODE_FILTER = r"(?i)^(?:.*美国.*专线.*AI.*|.*美国.*AI.*专线.*|.*专线.*美国.*AI.*|.*专线.*AI.*美国.*|.*AI.*美国.*专线.*|.*AI.*专线.*美国.*)$"
+INCLUDE_REMARKS_FILTER = r"(?i)^(?:US-9929v3-TUTUGW|US-4837v2-TUTUGW|US-9929v4-TUTUGW|.*美国.*专线.*AI.*|.*美国.*AI.*专线.*|.*专线.*美国.*AI.*|.*专线.*AI.*美国.*|.*AI.*美国.*专线.*|.*AI.*专线.*美国.*)$"
+EXCLUDE_REMARKS_FILTER = r"(?i)(?:小白|cf加速|hy2|D美国5)"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
+EXCLUDE_REMARKS = f"exclude_remarks={EXCLUDE_REMARKS_FILTER}"
 
-SELF_HOSTED_RULES = "`".join(SELF_HOSTED_NODE_FILTERS)
+SELF_HOSTED_RULES = "`".join(f"[]{name}" for name in SELF_HOSTED_NODES)
 MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`[]🏠 自建优先`{SELF_HOSTED_RULES}`[]✈️ 机场自动`[]🎯 全球直连"
 SELF_HOSTED_FALLBACK_GROUP = f"custom_proxy_group=🏠 自建优先`fallback`{SELF_HOSTED_RULES}`[]✈️ 机场自动`https://cp.cloudflare.com/generate_204`300,,50"
 AIRPORT_AUTO_GROUP = f"custom_proxy_group=✈️ 机场自动`url-test`{AIRPORT_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50"
@@ -186,7 +187,7 @@ def insert_base_config(lines: list[str]) -> list[str]:
     without_existing = [
         line
         for line in lines
-        if not line.startswith(("clash_rule_base=", "include_remarks="))
+        if not line.startswith(("clash_rule_base=", "include_remarks=", "exclude_remarks="))
     ]
 
     try:
@@ -198,6 +199,7 @@ def insert_base_config(lines: list[str]) -> list[str]:
         *without_existing[: custom_index + 1],
         base_line,
         INCLUDE_REMARKS,
+        EXCLUDE_REMARKS,
         *without_existing[custom_index + 1 :],
     ]
 
@@ -269,6 +271,7 @@ def validate_generated(text: str) -> None:
         "[custom]",
         f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml",
         INCLUDE_REMARKS,
+        EXCLUDE_REMARKS,
         *CUSTOM_RULESETS,
         MANUAL_GROUP,
         SELF_HOSTED_FALLBACK_GROUP,

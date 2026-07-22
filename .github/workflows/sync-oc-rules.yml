@@ -26,7 +26,8 @@ jobs:
           grep -q 'Encrypted_DNS_Domain.yaml' OC_Rules/Custom_Clash_Lite.ini
           grep -q 'clash_rule_base=.*OC_Rules/Custom_Clash_Base.yaml' OC_Rules/Custom_Clash_Lite.ini
           python3 .github/scripts/test_sync_oc_upstream.py
-          grep -Fq 'include_remarks=(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2).*|(?=.*美国)(?=.*专线)(?=.*AI).*|🏠 自建优先|✈️ 机场自动|🎯 全球直连)$' OC_Rules/Custom_Clash_Lite.ini
+          grep -Fq 'include_remarks=(?i)^(?:US-9929v3-TUTUGW|US-4837v2-TUTUGW|US-9929v4-TUTUGW|.*美国.*专线.*AI.*|.*美国.*AI.*专线.*|.*专线.*美国.*AI.*|.*专线.*AI.*美国.*|.*AI.*美国.*专线.*|.*AI.*专线.*美国.*)$' OC_Rules/Custom_Clash_Lite.ini
+          grep -Fq 'exclude_remarks=(?i)(?:小白|cf加速|hy2|D美国5)' OC_Rules/Custom_Clash_Lite.ini
           grep -Fq 'custom_proxy_group=🚀 手动选择`select`[]🏠 自建优先' OC_Rules/Custom_Clash_Lite.ini
           grep -Fq 'custom_proxy_group=🏠 自建优先`fallback`' OC_Rules/Custom_Clash_Lite.ini
           grep -Fq 'custom_proxy_group=✈️ 机场自动`url-test`' OC_Rules/Custom_Clash_Lite.ini

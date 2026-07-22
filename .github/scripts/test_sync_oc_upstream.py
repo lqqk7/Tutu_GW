@@ -14,28 +14,26 @@ SPEC.loader.exec_module(SYNC)
 
 
 class NodeFilterTest(unittest.TestCase):
-    def test_self_hosted_filters_are_in_priority_order(self):
+    def test_self_hosted_nodes_are_exact_and_in_priority_order(self):
         self.assertEqual(
-            SYNC.SELF_HOSTED_NODE_FILTERS,
+            SYNC.SELF_HOSTED_NODES,
             (
-                r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*9929v3.*$",
-                r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*4837v2.*$",
-                r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*9929v4.*$",
+                "US-9929v3-TUTUGW",
+                "US-4837v2-TUTUGW",
+                "US-9929v4-TUTUGW",
             ),
         )
 
-        for node_filter, name in zip(
-            SYNC.SELF_HOSTED_NODE_FILTERS,
-            ("US-9929v3-TUTUGW", "US-4837v2-TUTUGW", "US-9929v4-TUTUGW"),
-        ):
-            self.assertIsNotNone(re.fullmatch(node_filter, name), name)
-
-    def test_airport_filter_requires_us_dedicated_line_and_ai_keywords(self):
+    def test_airport_filter_requires_all_keywords_in_any_order(self):
         pattern = re.compile(SYNC.AIRPORT_NODE_FILTER)
 
         for name in (
             "美国-专线-AI",
-            "AI-Claude-美国7-专线A1",
+            "美国-AI-专线",
+            "专线-美国-AI",
+            "专线-AI-美国",
+            "AI-美国-专线",
+            "AI-专线-美国",
         ):
             self.assertIsNotNone(pattern.fullmatch(name), name)
 
@@ -50,22 +48,32 @@ class NodeFilterTest(unittest.TestCase):
         ):
             self.assertIsNone(pattern.fullmatch(name), name)
 
+    def test_compatibility_filters_do_not_use_lookaround(self):
+        for node_filter in (
+            SYNC.AIRPORT_NODE_FILTER,
+            SYNC.INCLUDE_REMARKS_FILTER,
+            SYNC.EXCLUDE_REMARKS_FILTER,
+        ):
+            self.assertNotIn("(?=", node_filter)
+            self.assertNotIn("(?!", node_filter)
+
     def test_excludes_cf_acceleration_and_hy2_nodes(self):
-        pattern = re.compile(SYNC.AIRPORT_NODE_FILTER)
+        pattern = re.compile(SYNC.EXCLUDE_REMARKS_FILTER)
 
         for name in ("美国-专线-AI-cf加速", "美国-专线-AI-HY2"):
-            self.assertIsNone(pattern.fullmatch(name), name)
+            self.assertIsNotNone(pattern.search(name), name)
 
     def test_excludes_d_us5_nodes(self):
-        pattern = re.compile(SYNC.AIRPORT_NODE_FILTER)
+        pattern = re.compile(SYNC.EXCLUDE_REMARKS_FILTER)
 
         for name in ("D美国5-专线-AI",):
-            self.assertIsNone(pattern.fullmatch(name), name)
+            self.assertIsNotNone(pattern.search(name), name)
 
     def test_local_config_uses_the_shared_filter(self):
         config = (ROOT / "OC_Rules/Custom_Clash_Lite.ini").read_text()
 
         self.assertIn(SYNC.INCLUDE_REMARKS, config)
+        self.assertIn(SYNC.EXCLUDE_REMARKS, config)
         self.assertIn(
             SYNC.MANUAL_GROUP,
             config,
