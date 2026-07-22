@@ -13,31 +13,45 @@ SYNC = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SYNC)
 
 
-class UsNodeFilterTest(unittest.TestCase):
-    def test_only_keeps_requested_us_nodes(self):
-        pattern = re.compile(SYNC.US_NODE_FILTER)
+class NodeFilterTest(unittest.TestCase):
+    def test_self_hosted_filters_are_in_priority_order(self):
+        self.assertEqual(
+            SYNC.SELF_HOSTED_NODE_FILTERS,
+            (
+                r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*9929v3.*$",
+                r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*4837v2.*$",
+                r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*9929v4.*$",
+            ),
+        )
+
+    def test_airport_filter_keeps_home_broadband_and_dedicated_line_nodes(self):
+        pattern = re.compile(SYNC.AIRPORT_NODE_FILTER)
 
         for name in (
-            "美国-家宽-专线",
+            "美国-家宽-机场",
+            "专线A1-美国7-家宽静态IP",
+            "新加坡-专线",
+        ):
+            self.assertIsNotNone(pattern.fullmatch(name), name)
+
+        for name in (
+            "普通美国节点",
             "US-AIGC-9929v3-TUTUGW",
             "US-AIGC-9929v4-TUTUGW",
             "US-General-4837v2-TUTUGW",
         ):
-            self.assertIsNotNone(pattern.fullmatch(name), name)
-
-        for name in ("美国-家宽-小白", "US-AIGC-9929v3-小白", "US-General-4837v1"):
             self.assertIsNone(pattern.fullmatch(name), name)
 
     def test_excludes_cf_acceleration_and_hy2_nodes(self):
-        pattern = re.compile(SYNC.US_NODE_FILTER)
+        pattern = re.compile(SYNC.AIRPORT_NODE_FILTER)
 
-        for name in ("美国-家宽-cf加速", "US-AIGC-9929v3-HY2"):
+        for name in ("美国-家宽-cf加速", "美国-专线-HY2"):
             self.assertIsNone(pattern.fullmatch(name), name)
 
     def test_excludes_d_us5_nodes(self):
-        pattern = re.compile(SYNC.US_NODE_FILTER)
+        pattern = re.compile(SYNC.AIRPORT_NODE_FILTER)
 
-        for name in ("D美国5-家宽", "D美国5-9929v3"):
+        for name in ("D美国5-家宽", "D美国5-专线"):
             self.assertIsNone(pattern.fullmatch(name), name)
 
     def test_local_config_uses_the_shared_filter(self):
@@ -45,14 +59,11 @@ class UsNodeFilterTest(unittest.TestCase):
 
         self.assertIn(SYNC.INCLUDE_REMARKS, config)
         self.assertIn(
-            f"custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🎯 全球直连`{SYNC.US_NODE_FILTER}",
+            SYNC.MANUAL_GROUP,
             config,
         )
-        self.assertIn(f"custom_proxy_group=🇺🇸 美国节点`select`{SYNC.US_NODE_FILTER}", config)
-        self.assertIn(
-            f"custom_proxy_group=♻️ 自动选择`url-test`{SYNC.US_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50",
-            config,
-        )
+        self.assertIn(SYNC.SELF_HOSTED_FALLBACK_GROUP, config)
+        self.assertIn(SYNC.AIRPORT_AUTO_GROUP, config)
 
 
 if __name__ == "__main__":

@@ -26,10 +26,11 @@ jobs:
           grep -q 'Encrypted_DNS_Domain.yaml' OC_Rules/Custom_Clash_Lite.ini
           grep -q 'clash_rule_base=.*OC_Rules/Custom_Clash_Base.yaml' OC_Rules/Custom_Clash_Lite.ini
           python3 .github/scripts/test_sync_oc_upstream.py
-          grep -Fq 'include_remarks=(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2).*|(?=.*美国)(?=.*家宽).*|♻️ 自动选择|🎯 全球直连|🇺🇸 美国节点)$' OC_Rules/Custom_Clash_Lite.ini
-          grep -Fq 'custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🎯 全球直连`(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2).*|(?=.*美国)(?=.*家宽).*)$' OC_Rules/Custom_Clash_Lite.ini
-          grep -Fq 'custom_proxy_group=🇺🇸 美国节点`select`(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2).*|(?=.*美国)(?=.*家宽).*)$' OC_Rules/Custom_Clash_Lite.ini
-          grep -Fq 'custom_proxy_group=♻️ 自动选择`url-test`(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2).*|(?=.*美国)(?=.*家宽).*)$`https://cp.cloudflare.com/generate_204`300,,50' OC_Rules/Custom_Clash_Lite.ini
+          grep -Fq 'include_remarks=(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2|专线).*|(?=.*美国)(?=.*家宽).*|🏠 自建优先|✈️ 机场自动|🎯 全球直连)$' OC_Rules/Custom_Clash_Lite.ini
+          grep -Fq 'custom_proxy_group=🚀 手动选择`select`[]🏠 自建优先' OC_Rules/Custom_Clash_Lite.ini
+          grep -Fq 'custom_proxy_group=🏠 自建优先`fallback`' OC_Rules/Custom_Clash_Lite.ini
+          grep -Fq 'custom_proxy_group=✈️ 机场自动`url-test`' OC_Rules/Custom_Clash_Lite.ini
+          ! grep -Eq '^custom_proxy_group=(♻️ 自动选择|🇺🇸 美国节点)' OC_Rules/Custom_Clash_Lite.ini
           grep -q 'respect-rules: true' OC_Rules/Custom_Clash_Base.yaml
           grep -q 'ipv6: false' OC_Rules/Custom_Clash_Base.yaml
           grep -q 'use-system-hosts: false' OC_Rules/Custom_Clash_Base.yaml

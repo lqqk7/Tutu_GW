@@ -22,9 +22,20 @@ AI_PROVIDER = Path("OC_Rules/rule/AI_Classical.yaml")
 AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
 SHADOWROCKET_AI_RULES = Path("rules/AI-All.list")
 
-US_NODE_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2).*|(?=.*美国)(?=.*家宽).*)$"
-INCLUDE_REMARKS_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2).*|(?=.*美国)(?=.*家宽).*|♻️ 自动选择|🎯 全球直连|🇺🇸 美国节点)$"
+SELF_HOSTED_NODE_FILTERS = (
+    r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*9929v3.*$",
+    r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*4837v2.*$",
+    r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*9929v4.*$",
+)
+AIRPORT_NODE_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5|9929v[34]|4837v2))(?:.*专线.*|(?=.*美国)(?=.*家宽).*)$"
+ELIGIBLE_NODE_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2|专线).*|(?=.*美国)(?=.*家宽).*)$"
+INCLUDE_REMARKS_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2|专线).*|(?=.*美国)(?=.*家宽).*|🏠 自建优先|✈️ 机场自动|🎯 全球直连)$"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
+
+SELF_HOSTED_RULES = "`".join(SELF_HOSTED_NODE_FILTERS)
+MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`[]🏠 自建优先`{SELF_HOSTED_RULES}`[]✈️ 机场自动`[]🎯 全球直连"
+SELF_HOSTED_FALLBACK_GROUP = f"custom_proxy_group=🏠 自建优先`fallback`{SELF_HOSTED_RULES}`[]✈️ 机场自动`https://cp.cloudflare.com/generate_204`300,,50"
+AIRPORT_AUTO_GROUP = f"custom_proxy_group=✈️ 机场自动`url-test`{AIRPORT_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50"
 
 CUSTOM_RULESETS = [
     f"ruleset=🤖 AI服务,clash-classic:{RAW_BASE}/OC_Rules/rule/AI_Classical.yaml,28800",
@@ -34,20 +45,20 @@ CUSTOM_RULESETS = [
 ]
 
 CUSTOM_PROXY_GROUPS = [
-    f"custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🎯 全球直连`{US_NODE_FILTER}",
-    f"custom_proxy_group=🇺🇸 美国节点`select`{US_NODE_FILTER}",
-    f"custom_proxy_group=♻️ 自动选择`url-test`{US_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50",
-    "custom_proxy_group=🤖 AI服务`select`[]🚀 手动选择`[]♻️ 自动选择",
-    "custom_proxy_group=🖨️ AD5X切片`select`[]🎯 全球直连`[]🚀 手动选择`[]♻️ 自动选择",
-    "custom_proxy_group=🚀 GitHub`select`[]🚀 手动选择`[]♻️ 自动选择`[]🎯 全球直连",
-    "custom_proxy_group=📢 谷歌FCM`select`[]🚀 手动选择`[]♻️ 自动选择`[]🎯 全球直连",
-    "custom_proxy_group=🇬 谷歌服务`select`[]🚀 手动选择`[]♻️ 自动选择`[]🎯 全球直连",
-    "custom_proxy_group=🍎 苹果服务`select`[]🎯 全球直连`[]🚀 手动选择`[]♻️ 自动选择",
-    "custom_proxy_group=Ⓜ️ 微软服务`select`[]🎯 全球直连`[]🚀 手动选择`[]♻️ 自动选择",
-    "custom_proxy_group=🎮 游戏平台`select`[]🎯 全球直连`[]🚀 手动选择`[]♻️ 自动选择",
-    "custom_proxy_group=🎮 Steam`select`[]🎯 全球直连`[]🚀 手动选择`[]♻️ 自动选择",
-    "custom_proxy_group=🚀 测速工具`select`[]🎯 全球直连`[]🚀 手动选择`[]♻️ 自动选择",
-    "custom_proxy_group=🐟 漏网之鱼`select`[]🚀 手动选择`[]♻️ 自动选择`[]🎯 全球直连",
+    MANUAL_GROUP,
+    SELF_HOSTED_FALLBACK_GROUP,
+    AIRPORT_AUTO_GROUP,
+    "custom_proxy_group=🤖 AI服务`select`[]🚀 手动选择`[]🏠 自建优先",
+    "custom_proxy_group=🖨️ AD5X切片`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
+    "custom_proxy_group=🚀 GitHub`select`[]🚀 手动选择`[]🏠 自建优先`[]🎯 全球直连",
+    "custom_proxy_group=📢 谷歌FCM`select`[]🚀 手动选择`[]🏠 自建优先`[]🎯 全球直连",
+    "custom_proxy_group=🇬 谷歌服务`select`[]🚀 手动选择`[]🏠 自建优先`[]🎯 全球直连",
+    "custom_proxy_group=🍎 苹果服务`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
+    "custom_proxy_group=Ⓜ️ 微软服务`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
+    "custom_proxy_group=🎮 游戏平台`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
+    "custom_proxy_group=🎮 Steam`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
+    "custom_proxy_group=🚀 测速工具`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
+    "custom_proxy_group=🐟 漏网之鱼`select`[]🚀 手动选择`[]🏠 自建优先`[]🎯 全球直连",
     "custom_proxy_group=🔀 非标端口`select`[]🐟 漏网之鱼`[]🎯 全球直连",
     "custom_proxy_group=🎯 全球直连`select`[]DIRECT",
 ]
@@ -259,9 +270,9 @@ def validate_generated(text: str) -> None:
         f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml",
         INCLUDE_REMARKS,
         *CUSTOM_RULESETS,
-        f"custom_proxy_group=🚀 手动选择`select`[]♻️ 自动选择`[]🎯 全球直连`{US_NODE_FILTER}",
-        f"custom_proxy_group=🇺🇸 美国节点`select`{US_NODE_FILTER}",
-        f"custom_proxy_group=♻️ 自动选择`url-test`{US_NODE_FILTER}`https://cp.cloudflare.com/generate_204`300,,50",
+        MANUAL_GROUP,
+        SELF_HOSTED_FALLBACK_GROUP,
+        AIRPORT_AUTO_GROUP,
         "ruleset=🤖 AI服务,clash-classic:",
         "ruleset=🖨️ AD5X切片,clash-classic:",
         "enable_rule_generator=true",
