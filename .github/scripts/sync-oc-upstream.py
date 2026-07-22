@@ -27,9 +27,9 @@ SELF_HOSTED_NODE_FILTERS = (
     r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*4837v2.*$",
     r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5)).*9929v4.*$",
 )
-AIRPORT_NODE_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5|9929v[34]|4837v2))(?:.*专线.*|(?=.*美国)(?=.*家宽).*)$"
-ELIGIBLE_NODE_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2|专线).*|(?=.*美国)(?=.*家宽).*)$"
-INCLUDE_REMARKS_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2|专线).*|(?=.*美国)(?=.*家宽).*|🏠 自建优先|✈️ 机场自动|🎯 全球直连)$"
+AIRPORT_NODE_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5|9929v[34]|4837v2))(?=.*美国)(?=.*专线)(?=.*AI).*$"
+ELIGIBLE_NODE_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2).*|(?=.*美国)(?=.*专线)(?=.*AI).*)$"
+INCLUDE_REMARKS_FILTER = r"(?i)^(?!.*(?:小白|cf加速|hy2|D美国5))(?:.*(?:9929v[34]|4837v2).*|(?=.*美国)(?=.*专线)(?=.*AI).*|🏠 自建优先|✈️ 机场自动|🎯 全球直连)$"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
 
 SELF_HOSTED_RULES = "`".join(SELF_HOSTED_NODE_FILTERS)

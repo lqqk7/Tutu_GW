@@ -24,18 +24,26 @@ class NodeFilterTest(unittest.TestCase):
             ),
         )
 
-    def test_airport_filter_keeps_home_broadband_and_dedicated_line_nodes(self):
+        for node_filter, name in zip(
+            SYNC.SELF_HOSTED_NODE_FILTERS,
+            ("US-9929v3-TUTUGW", "US-4837v2-TUTUGW", "US-9929v4-TUTUGW"),
+        ):
+            self.assertIsNotNone(re.fullmatch(node_filter, name), name)
+
+    def test_airport_filter_requires_us_dedicated_line_and_ai_keywords(self):
         pattern = re.compile(SYNC.AIRPORT_NODE_FILTER)
 
         for name in (
-            "美国-家宽-机场",
-            "专线A1-美国7-家宽静态IP",
-            "新加坡-专线",
+            "美国-专线-AI",
+            "AI-Claude-美国7-专线A1",
         ):
             self.assertIsNotNone(pattern.fullmatch(name), name)
 
         for name in (
-            "普通美国节点",
+            "美国-专线",
+            "美国-AI",
+            "专线-AI",
+            "新加坡-专线-AI",
             "US-AIGC-9929v3-TUTUGW",
             "US-AIGC-9929v4-TUTUGW",
             "US-General-4837v2-TUTUGW",
@@ -45,13 +53,13 @@ class NodeFilterTest(unittest.TestCase):
     def test_excludes_cf_acceleration_and_hy2_nodes(self):
         pattern = re.compile(SYNC.AIRPORT_NODE_FILTER)
 
-        for name in ("美国-家宽-cf加速", "美国-专线-HY2"):
+        for name in ("美国-专线-AI-cf加速", "美国-专线-AI-HY2"):
             self.assertIsNone(pattern.fullmatch(name), name)
 
     def test_excludes_d_us5_nodes(self):
         pattern = re.compile(SYNC.AIRPORT_NODE_FILTER)
 
-        for name in ("D美国5-家宽", "D美国5-专线"):
+        for name in ("D美国5-专线-AI",):
             self.assertIsNone(pattern.fullmatch(name), name)
 
     def test_local_config_uses_the_shared_filter(self):
