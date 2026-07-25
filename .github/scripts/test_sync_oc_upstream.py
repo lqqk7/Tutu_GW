@@ -75,6 +75,16 @@ class NodeFilterTest(unittest.TestCase):
         for name in ("D美国5-专线-AI",):
             self.assertIsNotNone(pattern.search(name), name)
 
+    def test_proxy_groups_share_the_gstatic_health_check(self):
+        self.assertEqual(
+            SYNC.HEALTH_CHECK_URL,
+            "https://www.gstatic.com/generate_204",
+        )
+        self.assertIn(SYNC.HEALTH_CHECK_URL, SYNC.SELF_HOSTED_FALLBACK_GROUP)
+        self.assertIn(SYNC.HEALTH_CHECK_URL, SYNC.AIRPORT_AUTO_GROUP)
+        self.assertNotIn("cp.cloudflare.com", SYNC.SELF_HOSTED_FALLBACK_GROUP)
+        self.assertNotIn("cp.cloudflare.com", SYNC.AIRPORT_AUTO_GROUP)
+
     def test_local_config_uses_the_shared_filter(self):
         config = (ROOT / "OC_Rules/Custom_Clash_Lite.ini").read_text()
 
