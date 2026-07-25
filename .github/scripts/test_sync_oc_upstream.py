@@ -27,8 +27,11 @@ class NodeFilterTest(unittest.TestCase):
         pattern = re.compile(SYNC.SELF_HOSTED_NODE_FILTER)
         for name in SYNC.SELF_HOSTED_NODES:
             self.assertIsNotNone(pattern.fullmatch(name), name)
+            self.assertIsNotNone(pattern.fullmatch(f"🇺🇸 {name}"), name)
             self.assertNotIn(f"[]{name}", SYNC.MANUAL_GROUP)
             self.assertNotIn(f"[]{name}", SYNC.SELF_HOSTED_FALLBACK_GROUP)
+
+        self.assertIsNone(pattern.fullmatch("🇺🇸 US-4837v1-TUTUGW"))
 
     def test_airport_filter_requires_all_keywords_in_any_order(self):
         pattern = re.compile(SYNC.AIRPORT_NODE_FILTER)
