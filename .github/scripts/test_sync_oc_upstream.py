@@ -33,6 +33,14 @@ class NodeFilterTest(unittest.TestCase):
 
         self.assertIsNone(pattern.fullmatch("🇺🇸 US-4837v1-TUTUGW"))
 
+        expected_rules = tuple(
+            rf"(?i)^(?:🇺🇸\s*)?{name}$" for name in SYNC.SELF_HOSTED_NODES
+        )
+        self.assertEqual(SYNC.SELF_HOSTED_GROUP_RULES, "`".join(expected_rules))
+        for group in (SYNC.MANUAL_GROUP, SYNC.SELF_HOSTED_FALLBACK_GROUP):
+            positions = [group.index(rule) for rule in expected_rules]
+            self.assertEqual(positions, sorted(positions), group)
+
     def test_airport_filter_requires_all_keywords_in_any_order(self):
         pattern = re.compile(SYNC.AIRPORT_NODE_FILTER)
 
