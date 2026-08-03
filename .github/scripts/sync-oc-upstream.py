@@ -27,20 +27,16 @@ SELF_HOSTED_NODES = (
     "US-4837v2-TUTUGW",
     "US-9929v4-TUTUGW",
 )
-AIRPORT_NODE_FILTER = r"(?i)^(?:.*美国.*专线.*AI.*|.*美国.*AI.*专线.*|.*专线.*美国.*AI.*|.*专线.*AI.*美国.*|.*AI.*美国.*专线.*|.*AI.*专线.*美国.*)$"
-INCLUDE_REMARKS_FILTER = r"(?i)^(?:US-9929v3-TUTUGW|US-4837v2-TUTUGW|US-9929v4-TUTUGW|.*美国.*专线.*AI.*|.*美国.*AI.*专线.*|.*专线.*美国.*AI.*|.*专线.*AI.*美国.*|.*AI.*美国.*专线.*|.*AI.*专线.*美国.*)$"
-EXCLUDE_REMARKS_FILTER = r"(?i)(?:小白|cf加速|hy2|D美国5)"
+INCLUDE_REMARKS_FILTER = rf"(?i)^(?:{'|'.join(SELF_HOSTED_NODES)})$"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
-EXCLUDE_REMARKS = f"exclude_remarks={EXCLUDE_REMARKS_FILTER}"
 HEALTH_CHECK_URL = "https://www.gstatic.com/generate_204"
 
 SELF_HOSTED_NODE_FILTER = rf"(?i)^(?:🇺🇸\s*)?(?:{'|'.join(SELF_HOSTED_NODES)})$"
 SELF_HOSTED_GROUP_RULES = "`".join(
     rf"(?i)^(?:🇺🇸\s*)?{name}$" for name in SELF_HOSTED_NODES
 )
-MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`[]🏠 自建优先`{SELF_HOSTED_GROUP_RULES}`[]✈️ 机场自动`[]🎯 全球直连"
-SELF_HOSTED_FALLBACK_GROUP = f"custom_proxy_group=🏠 自建优先`fallback`{SELF_HOSTED_GROUP_RULES}`[]✈️ 机场自动`{HEALTH_CHECK_URL}`300,,50"
-AIRPORT_AUTO_GROUP = f"custom_proxy_group=✈️ 机场自动`url-test`{AIRPORT_NODE_FILTER}`{HEALTH_CHECK_URL}`300,,50"
+MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`[]🏠 自建优先`{SELF_HOSTED_GROUP_RULES}`[]🎯 全球直连"
+SELF_HOSTED_FALLBACK_GROUP = f"custom_proxy_group=🏠 自建优先`fallback`{SELF_HOSTED_GROUP_RULES}`{HEALTH_CHECK_URL}`300,,50"
 
 CUSTOM_RULESETS = [
     f"ruleset=🤖 AI服务,clash-classic:{RAW_BASE}/OC_Rules/rule/AI_Classical.yaml,28800",
@@ -52,7 +48,6 @@ CUSTOM_RULESETS = [
 CUSTOM_PROXY_GROUPS = [
     MANUAL_GROUP,
     SELF_HOSTED_FALLBACK_GROUP,
-    AIRPORT_AUTO_GROUP,
     "custom_proxy_group=🤖 AI服务`select`[]🚀 手动选择`[]🏠 自建优先",
     "custom_proxy_group=🖨️ AD5X切片`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
     "custom_proxy_group=🚀 GitHub`select`[]🚀 手动选择`[]🏠 自建优先`[]🎯 全球直连",
@@ -203,7 +198,6 @@ def insert_base_config(lines: list[str]) -> list[str]:
         *without_existing[: custom_index + 1],
         base_line,
         INCLUDE_REMARKS,
-        EXCLUDE_REMARKS,
         *without_existing[custom_index + 1 :],
     ]
 
@@ -275,11 +269,9 @@ def validate_generated(text: str) -> None:
         "[custom]",
         f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml",
         INCLUDE_REMARKS,
-        EXCLUDE_REMARKS,
         *CUSTOM_RULESETS,
         MANUAL_GROUP,
         SELF_HOSTED_FALLBACK_GROUP,
-        AIRPORT_AUTO_GROUP,
         "ruleset=🤖 AI服务,clash-classic:",
         "ruleset=🖨️ AD5X切片,clash-classic:",
         "enable_rule_generator=true",
@@ -303,6 +295,9 @@ def validate_generated(text: str) -> None:
 
     if "全部节点" in text:
         raise RuntimeError("Redundant all-nodes group remains")
+
+    if "机场自动" in text:
+        raise RuntimeError("Airport proxy group remains")
 
 
 def main() -> int:
