@@ -110,11 +110,6 @@ EXPECTED_DOH = (
 )
 EXPECTED_PROXY_GROUP = (
     "fallback = fallback,US-9929v3-TUTU,US-4837v2-TUTU,US-9929v4-TUTU,"
-    "专线 A1-美国 6-家宽住宅 IP-适合 AI-Claude 等 Tiktok 数据好银行全解锁-3 倍率,"
-    "专线 A1-美国 7-家宽静态 IP-适合 AI-Claude 等 Tiktok 数据好银行全解锁-3 倍率,"
-    "专线 A1-美国 7a-家宽静态 IP-适合 AI-Claude 等 Tiktok 数据好银行全解锁-3 倍率,"
-    "专线 A1-美国 8-双 ISP 家宽 IP-适合 AI-Claude 等-3 倍率,"
-    "专线 A1-美国 9-双 ISP 家宽 IP-适合 AI-Claude 等-3 倍率,"
     "timeout=5,interval=600,url=http://www.gstatic.com/generate_204"
 )
 
@@ -174,10 +169,10 @@ def main() -> int:
     )
     options = fallback_parts[-3:]
     fallback_nodes = fallback_parts[1:-3]
-    require(len(fallback_nodes) == 8, "fallback group must contain exactly 8 nodes")
+    require(len(fallback_nodes) == 3, "fallback group must contain exactly 3 nodes")
     require(
-        not any(node.startswith(("D美国", "专线A1-美国")) for node in fallback_nodes),
-        "fallback group must not contain legacy airport node names",
+        fallback_nodes == ["US-9929v3-TUTU", "US-4837v2-TUTU", "US-9929v4-TUTU"],
+        "fallback group must contain only the ordered self-hosted nodes",
     )
     require(
         options == ["timeout=5", "interval=600", "url=http://www.gstatic.com/generate_204"],
