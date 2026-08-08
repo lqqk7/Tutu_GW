@@ -137,9 +137,10 @@ jobs:
             **构建时间:** ${{ env.BUILD_DATE }}
 
             ### 网络预设
-            - LAN: `192.168.5.1` / br-lan (eth0–eth3)
-            - WAN: PPPoE / eth4.3961
+            - LAN: `192.168.5.1` / br-lan (eth0–eth1)
+            - WAN: `192.168.1.2` / eth2，网关 `192.168.1.1`
+            - FTTR: WAN 侧 DHCP、静态租约、端口转发与 mDNS 反射
             - 默认密码: 空
 
             ### 内置插件
-            openclash · mosdns · passwall · ssrplus · ddns-go · advancedplus · autoupdate · turboacc · vlmcsd · upnp
+            openclash · mosdns · passwall · ddns-go · advancedplus · autoupdate · turboacc · upnp

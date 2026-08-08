@@ -1,84 +1,395 @@
 #!/bin/sh
 # 99-tutu-defaults — 首次启动自动执行，配置完成后自动删除
 
-# ============================================================
-# 密码
-# ============================================================
-passwd -d root
+find_uci_section() {
+    local package="$1"
+    local type="$2"
+    local option="$3"
+    local value="$4"
+    local section
+
+    for section in $(uci show "$package" 2>/dev/null | sed -n "s/^${package}\.\([^=]*\)=${type}$/\1/p"); do
+        if [ "$(uci -q get "${package}.${section}.${option}")" = "$value" ]; then
+            echo "$section"
+            return 0
+        fi
+    done
+    return 1
+}
+
+set_redirect() {
+    local section="$1"
+    local name="$2"
+    local proto="$3"
+    local src_dport="$4"
+    local dest_zone="$5"
+    local dest_ip="$6"
+    local dest_port="$7"
+
+    uci -q delete firewall."$section"
+    uci set firewall."$section"='redirect'
+    uci set firewall."$section".name="$name"
+    uci set firewall."$section".family='ipv4'
+    uci set firewall."$section".proto="$proto"
+    uci set firewall."$section".src='wan'
+    uci set firewall."$section".src_dport="$src_dport"
+    uci set firewall."$section".dest="$dest_zone"
+    uci set firewall."$section".dest_ip="$dest_ip"
+    uci set firewall."$section".dest_port="$dest_port"
+    uci set firewall."$section".target='DNAT'
+}
 
 # ============================================================
-# Hostname
+# 密码与主机名
 # ============================================================
+passwd -d root
 uci set system.@system[0].hostname='TUTU-GW'
 uci commit system
 
 # ============================================================
-# LAN — 192.168.5.1 / 255.255.255.0
+# 网络 — FTTR 主路由模式
+# LAN: br-lan / eth0 eth1 / 192.168.5.1
+# WAN: eth2 / 192.168.1.2 / gateway 192.168.1.1
 # ============================================================
+uci set network.globals.packet_steering='1'
+uci set network.globals.ula_prefix='fd38:3475:d56d::/48'
+
+BR_SECTION="$(find_uci_section network device name br-lan)"
+if [ -z "$BR_SECTION" ]; then
+    uci set network.brlan='device'
+    uci set network.brlan.name='br-lan'
+    BR_SECTION='brlan'
+fi
+uci set network."$BR_SECTION".type='bridge'
+uci set network."$BR_SECTION".ipv6='0'
+uci -q delete network."$BR_SECTION".ports
+uci add_list network."$BR_SECTION".ports='eth0'
+uci add_list network."$BR_SECTION".ports='eth1'
+
+uci set network.lan.proto='static'
+uci set network.lan.device='br-lan'
 uci set network.lan.ipaddr='192.168.5.1'
 uci set network.lan.netmask='255.255.255.0'
-uci del network.lan.ip6assign 2>/dev/null
+uci -q delete network.lan.ip6assign
 
-# ============================================================
-# br-lan bridge — eth0 eth1 eth2 eth3
-# ============================================================
-# 遍历所有 device section，找到 name=br-lan 的那个
-BR_SECTION=''
-for section in $(uci show network | grep -E "=device$" | sed 's/network\.\([^=]*\)=device/\1/'); do
-    if [ "$(uci -q get network."${section}".name)" = 'br-lan' ]; then
-        BR_SECTION="$section"
-        break
+for device in eth0 eth1 eth2 eth3 eth4; do
+    DEVICE_SECTION="$(find_uci_section network device name "$device")"
+    if [ -z "$DEVICE_SECTION" ]; then
+        uci set network."$device"='device'
+        uci set network."$device".name="$device"
+        DEVICE_SECTION="$device"
+    fi
+    if [ "$device" = 'eth4' ]; then
+        uci set network."$DEVICE_SECTION".ipv6='0'
     fi
 done
 
-if [ -n "$BR_SECTION" ]; then
-    uci del network."${BR_SECTION}".ports 2>/dev/null
-    uci add_list network."${BR_SECTION}".ports='eth0'
-    uci add_list network."${BR_SECTION}".ports='eth1'
-    uci add_list network."${BR_SECTION}".ports='eth2'
-    uci add_list network."${BR_SECTION}".ports='eth3'
-else
-    # 找不到就新建一个有名 section
-    uci set network.brlan=device
-    uci set network.brlan.name='br-lan'
-    uci set network.brlan.type='bridge'
-    uci add_list network.brlan.ports='eth0'
-    uci add_list network.brlan.ports='eth1'
-    uci add_list network.brlan.ports='eth2'
-    uci add_list network.brlan.ports='eth3'
-fi
-
-# ============================================================
-# WAN — PPPoE / eth4.3961 (VLAN 3961)
-# ============================================================
-uci set network.wan.proto='pppoe'
-uci set network.wan.device='eth4.3961'
-uci del network.wan.username 2>/dev/null
-uci del network.wan.password 2>/dev/null
-
-# 禁用 wan6
-uci set network.wan6.disabled='1' 2>/dev/null || uci delete network.wan6 2>/dev/null
-
+uci set network.wan.proto='static'
+uci set network.wan.device='eth2'
+uci set network.wan.force_link='0'
+uci set network.wan.ipaddr='192.168.1.2'
+uci set network.wan.netmask='255.255.255.0'
+uci set network.wan.gateway='192.168.1.1'
+uci set network.wan.delegate='0'
+uci set network.wan.peerdns='0'
+uci -q delete network.wan.username
+uci -q delete network.wan.password
+uci -q delete network.wan.ip6assign
+uci -q delete network.wan.dns
+uci add_list network.wan.dns='192.168.1.1'
+uci set network.wan6.disabled='1' 2>/dev/null || uci -q delete network.wan6
 uci commit network
 
 # ============================================================
-# 禁用 IPv6
+# DHCP — 不写入 OpenClash DNS 接管配置
 # ============================================================
+DNSMASQ_SECTION="$(uci show dhcp 2>/dev/null | sed -n 's/^dhcp\.\([^=]*\)=dnsmasq$/\1/p' | head -n 1)"
+[ -n "$DNSMASQ_SECTION" ] || DNSMASQ_SECTION='@dnsmasq[0]'
+uci set dhcp."$DNSMASQ_SECTION".domainneeded='1'
+uci set dhcp."$DNSMASQ_SECTION".localise_queries='1'
+uci set dhcp."$DNSMASQ_SECTION".rebind_protection='1'
+uci set dhcp."$DNSMASQ_SECTION".rebind_localhost='1'
+uci set dhcp."$DNSMASQ_SECTION".local='/lan/'
+uci set dhcp."$DNSMASQ_SECTION".domain='lan'
+uci set dhcp."$DNSMASQ_SECTION".expandhosts='1'
+uci set dhcp."$DNSMASQ_SECTION".authoritative='1'
+uci set dhcp."$DNSMASQ_SECTION".readethers='1'
+uci set dhcp."$DNSMASQ_SECTION".leasefile='/tmp/dhcp.leases'
+uci set dhcp."$DNSMASQ_SECTION".localservice='1'
+uci set dhcp."$DNSMASQ_SECTION".ednspacket_max='1232'
+uci set dhcp."$DNSMASQ_SECTION".filter_aaaa='1'
+uci set dhcp."$DNSMASQ_SECTION".sequential_ip='1'
+
+uci set dhcp.lan.interface='lan'
+uci set dhcp.lan.start='100'
+uci set dhcp.lan.limit='150'
+uci set dhcp.lan.leasetime='12h'
+uci set dhcp.lan.dhcpv4='server'
 uci set dhcp.lan.dhcpv6='disabled'
 uci set dhcp.lan.ra='disabled'
+uci set dhcp.lan.ra_slaac='1'
+uci -q delete dhcp.lan.ra_flags
+uci add_list dhcp.lan.ra_flags='managed-config'
+uci add_list dhcp.lan.ra_flags='other-config'
 uci set dhcp.lan.ndp='disabled'
+
+uci set dhcp.wan='dhcp'
+uci set dhcp.wan.interface='wan'
+uci set dhcp.wan.start='100'
+uci set dhcp.wan.limit='150'
+uci set dhcp.wan.leasetime='24h'
+uci set dhcp.wan.force='1'
+uci set dhcp.wan.ignore='0'
+uci -q delete dhcp.wan.dhcp_option
+uci add_list dhcp.wan.dhcp_option='3,192.168.1.2'
+uci add_list dhcp.wan.dhcp_option='6,192.168.1.2'
+
+uci -q delete dhcp.k251_direct
+uci set dhcp.k251_direct='tag'
+uci add_list dhcp.k251_direct.dhcp_option='3,192.168.1.1'
+uci add_list dhcp.k251_direct.dhcp_option='6,192.168.1.1'
+
+uci -q delete dhcp.k251
+uci set dhcp.k251='host'
+uci set dhcp.k251.name='K251-20'
+uci set dhcp.k251.mac='cc:bc:e3:1b:2b:01'
+uci set dhcp.k251.ip='192.168.1.3'
+uci add_list dhcp.k251.tag='k251_direct'
+
+uci -q delete dhcp.hp_deskjet
+uci set dhcp.hp_deskjet='host'
+uci set dhcp.hp_deskjet.name='HP-Deskjet'
+uci set dhcp.hp_deskjet.mac='B0:0C:D1:AB:8B:67'
+uci set dhcp.hp_deskjet.ip='192.168.1.10'
+uci set dhcp.hp_deskjet.leasetime='infinite'
+
+uci -q delete dhcp.xqhome_pc
+uci set dhcp.xqhome_pc='host'
+uci set dhcp.xqhome_pc.name='XQHOME-PC'
+uci set dhcp.xqhome_pc.mac='58:47:CA:78:4D:9D'
+uci set dhcp.xqhome_pc.ip='192.168.1.20'
+
+uci -q delete dhcp.xqtv
+uci set dhcp.xqtv='host'
+uci set dhcp.xqtv.name='XQTV'
+uci set dhcp.xqtv.mac='2C:E0:32:68:29:BA'
+uci set dhcp.xqtv.ip='192.168.1.30'
+uci set dhcp.xqtv.leasetime='infinite'
+
+uci -q delete dhcp.xqps5
+uci set dhcp.xqps5='host'
+uci set dhcp.xqps5.name='XQPS5'
+uci set dhcp.xqps5.mac='04:F7:78:32:32:3F'
+uci set dhcp.xqps5.ip='192.168.1.40'
+uci set dhcp.xqps5.leasetime='infinite'
+
+uci -q delete dhcp.xqns
+uci set dhcp.xqns='host'
+uci set dhcp.xqns.name='XQNS'
+uci set dhcp.xqns.mac='70:48:F7:E3:34:E5'
+uci set dhcp.xqns.ip='192.168.1.50'
+uci set dhcp.xqns.leasetime='infinite'
+
+uci -q delete dhcp.xqns_lite
+uci set dhcp.xqns_lite='host'
+uci set dhcp.xqns_lite.name='XQNS-Lite'
+uci set dhcp.xqns_lite.mac='98:E8:FA:83:B2:8A'
+uci set dhcp.xqns_lite.ip='192.168.1.60'
+uci set dhcp.xqns_lite.leasetime='infinite'
+
+uci -q delete dhcp.tutuoc
+uci set dhcp.tutuoc='host'
+uci set dhcp.tutuoc.name='TUTUOC'
+uci set dhcp.tutuoc.ip='192.168.1.70'
+uci set dhcp.tutuoc.leasetime='infinite'
+uci add_list dhcp.tutuoc.mac='1C:F6:4C:5A:A0:7E'
+uci add_list dhcp.tutuoc.mac='3E:09:10:75:76:FB'
+
+uci -q delete dhcp.ubuntu
+uci set dhcp.ubuntu='host'
+uci set dhcp.ubuntu.name='Ubuntu'
+uci set dhcp.ubuntu.mac='8C:32:23:18:64:0C'
+uci set dhcp.ubuntu.ip='192.168.1.80'
+uci set dhcp.ubuntu.leasetime='infinite'
+
+uci -q delete dhcp.xqnas
+uci set dhcp.xqnas='host'
+uci set dhcp.xqnas.name='XQNAS'
+uci set dhcp.xqnas.mac='24:5E:BE:69:1C:E3'
+uci set dhcp.xqnas.ip='192.168.5.5'
+uci set dhcp.xqnas.leasetime='infinite'
+
+uci set dhcp.odhcpd.maindhcp='0'
+uci set dhcp.odhcpd.leasefile='/tmp/hosts/odhcpd'
+uci set dhcp.odhcpd.leasetrigger='/usr/sbin/odhcpd-update'
+uci set dhcp.odhcpd.loglevel='4'
 uci commit dhcp
 
-/etc/init.d/odhcp6c disable 2>/dev/null
-/etc/init.d/odhcpd stop 2>/dev/null
-/etc/init.d/odhcpd disable 2>/dev/null
+/etc/init.d/odhcp6c disable 2>/dev/null || true
+/etc/init.d/odhcpd stop 2>/dev/null || true
+/etc/init.d/odhcpd disable 2>/dev/null || true
 
 # ============================================================
-# DNS leak guard — force LAN DNS through OpenClash DNS
+# 防火墙 — FTTR 转发、管理访问、端口转发与 mDNS
 # ============================================================
-if [ -f /usr/bin/tutu-dns-guard ]; then
-    sh /usr/bin/tutu-dns-guard
+FW_DEFAULTS="$(uci show firewall 2>/dev/null | sed -n 's/^firewall\.\([^=]*\)=defaults$/\1/p' | head -n 1)"
+if [ -z "$FW_DEFAULTS" ]; then
+    uci set firewall.tutu_defaults='defaults'
+    FW_DEFAULTS='tutu_defaults'
 fi
+uci set firewall."$FW_DEFAULTS".syn_flood='1'
+uci set firewall."$FW_DEFAULTS".input='REJECT'
+uci set firewall."$FW_DEFAULTS".output='ACCEPT'
+uci set firewall."$FW_DEFAULTS".forward='REJECT'
+uci set firewall."$FW_DEFAULTS".flow_offloading='1'
+uci set firewall."$FW_DEFAULTS".flow_offloading_hw='1'
+uci set firewall."$FW_DEFAULTS".fullcone='1'
+
+LAN_ZONE="$(find_uci_section firewall zone name lan)"
+if [ -z "$LAN_ZONE" ]; then
+    uci set firewall.tutu_lan='zone'
+    uci set firewall.tutu_lan.name='lan'
+    LAN_ZONE='tutu_lan'
+fi
+uci set firewall."$LAN_ZONE".input='ACCEPT'
+uci set firewall."$LAN_ZONE".output='ACCEPT'
+uci set firewall."$LAN_ZONE".forward='ACCEPT'
+uci -q delete firewall."$LAN_ZONE".network
+uci add_list firewall."$LAN_ZONE".network='lan'
+
+WAN_ZONE="$(find_uci_section firewall zone name wan)"
+if [ -z "$WAN_ZONE" ]; then
+    uci set firewall.tutu_wan='zone'
+    uci set firewall.tutu_wan.name='wan'
+    WAN_ZONE='tutu_wan'
+fi
+uci set firewall."$WAN_ZONE".input='REJECT'
+uci set firewall."$WAN_ZONE".output='ACCEPT'
+uci set firewall."$WAN_ZONE".forward='REJECT'
+uci set firewall."$WAN_ZONE".masq='1'
+uci set firewall."$WAN_ZONE".mtu_fix='1'
+uci -q delete firewall."$WAN_ZONE".network
+uci add_list firewall."$WAN_ZONE".network='wan'
+
+LAN_WAN_FORWARD=''
+for section in $(uci show firewall 2>/dev/null | sed -n 's/^firewall\.\([^=]*\)=forwarding$/\1/p'); do
+    if [ "$(uci -q get firewall."$section".src)" = 'lan' ] && \
+       [ "$(uci -q get firewall."$section".dest)" = 'wan' ]; then
+        LAN_WAN_FORWARD="$section"
+        break
+    fi
+done
+if [ -z "$LAN_WAN_FORWARD" ]; then
+    uci set firewall.tutu_lan_wan='forwarding'
+    uci set firewall.tutu_lan_wan.src='lan'
+    uci set firewall.tutu_lan_wan.dest='wan'
+fi
+
+set_redirect nas_15001 'NAS' 'tcp' '15001' 'lan' '192.168.5.5' '15001'
+set_redirect aria2_32516 'Aria2' 'tcp' '32516' 'lan' '192.168.5.5' '32516'
+set_redirect aria2_28080 'Aria2' 'tcp' '28080' 'lan' '192.168.5.5' '28080'
+set_redirect aria2_36800 'Aria2' 'tcp' '36800' 'lan' '192.168.5.5' '36800'
+set_redirect qbittorrent_18080 'qBittorrent' 'tcp' '18080' 'lan' '192.168.5.5' '18080'
+set_redirect qbittorrent_36881 'qBittorrent' 'tcp' '36881' 'lan' '192.168.5.5' '36881'
+set_redirect plex_32400 'PLEX' 'tcp' '32400' 'lan' '192.168.5.5' '32400'
+set_redirect wireguard_51820 'WireGuard' 'udp' '51820' 'wan' '192.168.1.70' '51820'
+set_redirect openviking_8443 'OpenViking' 'tcp' '8443' 'wan' '192.168.1.70' '8443'
+
+uci -q delete firewall.fttr_dhcp
+uci set firewall.fttr_dhcp='rule'
+uci set firewall.fttr_dhcp.name='Allow-FTTR-DHCP'
+uci set firewall.fttr_dhcp.src='wan'
+uci set firewall.fttr_dhcp.proto='udp'
+uci set firewall.fttr_dhcp.dest_port='67'
+uci set firewall.fttr_dhcp.family='ipv4'
+uci set firewall.fttr_dhcp.target='ACCEPT'
+
+uci -q delete firewall.fttr_dns
+uci set firewall.fttr_dns='rule'
+uci set firewall.fttr_dns.name='Allow-FTTR-DNS'
+uci set firewall.fttr_dns.src='wan'
+uci set firewall.fttr_dns.src_ip='192.168.1.0/24'
+uci set firewall.fttr_dns.proto='tcp udp'
+uci set firewall.fttr_dns.dest_port='53'
+uci set firewall.fttr_dns.family='ipv4'
+uci set firewall.fttr_dns.target='ACCEPT'
+
+uci -q delete firewall.fttr_clients_forward
+uci set firewall.fttr_clients_forward='rule'
+uci set firewall.fttr_clients_forward.name='Allow-FTTR-Clients-Forward'
+uci set firewall.fttr_clients_forward.src='wan'
+uci set firewall.fttr_clients_forward.dest='wan'
+uci set firewall.fttr_clients_forward.src_ip='192.168.1.0/24'
+uci set firewall.fttr_clients_forward.proto='all'
+uci set firewall.fttr_clients_forward.target='ACCEPT'
+
+uci -q delete firewall.fttr_management
+uci set firewall.fttr_management='rule'
+uci set firewall.fttr_management.name='Allow-FTTR-Management'
+uci set firewall.fttr_management.src='wan'
+uci set firewall.fttr_management.src_ip='192.168.1.0/24'
+uci set firewall.fttr_management.proto='tcp'
+uci set firewall.fttr_management.dest_port='80 443'
+uci set firewall.fttr_management.family='ipv4'
+uci set firewall.fttr_management.target='ACCEPT'
+
+uci -q delete firewall.fttr_ddns_go
+uci set firewall.fttr_ddns_go='rule'
+uci set firewall.fttr_ddns_go.name='Allow-FTTR-DDNS-Go'
+uci set firewall.fttr_ddns_go.src='wan'
+uci set firewall.fttr_ddns_go.src_ip='192.168.1.0/24'
+uci set firewall.fttr_ddns_go.proto='tcp'
+uci set firewall.fttr_ddns_go.dest_port='9876'
+uci set firewall.fttr_ddns_go.family='ipv4'
+uci set firewall.fttr_ddns_go.target='ACCEPT'
+
+uci -q delete firewall.fttr_openclash_web
+uci set firewall.fttr_openclash_web='rule'
+uci set firewall.fttr_openclash_web.name='Allow-FTTR-OpenClash-Web'
+uci set firewall.fttr_openclash_web.src='wan'
+uci set firewall.fttr_openclash_web.src_ip='192.168.1.0/24'
+uci set firewall.fttr_openclash_web.proto='tcp'
+uci set firewall.fttr_openclash_web.dest_port='9090'
+uci set firewall.fttr_openclash_web.family='ipv4'
+uci set firewall.fttr_openclash_web.target='ACCEPT'
+
+uci -q delete firewall.fttr_ssh
+uci set firewall.fttr_ssh='rule'
+uci set firewall.fttr_ssh.name='Allow-SSH-from-FTTR'
+uci set firewall.fttr_ssh.src='wan'
+uci set firewall.fttr_ssh.src_ip='192.168.1.0/24'
+uci set firewall.fttr_ssh.proto='tcp'
+uci set firewall.fttr_ssh.dest_port='22'
+uci set firewall.fttr_ssh.family='ipv4'
+uci set firewall.fttr_ssh.target='ACCEPT'
+
+uci -q delete firewall.fttr_to_lan
+uci set firewall.fttr_to_lan='rule'
+uci set firewall.fttr_to_lan.name='Allow-FTTR-to-LAN'
+uci set firewall.fttr_to_lan.src='wan'
+uci set firewall.fttr_to_lan.src_ip='192.168.1.0/24'
+uci set firewall.fttr_to_lan.dest='lan'
+uci set firewall.fttr_to_lan.dest_ip='192.168.5.0/24'
+uci set firewall.fttr_to_lan.proto='all'
+uci set firewall.fttr_to_lan.family='ipv4'
+uci set firewall.fttr_to_lan.target='ACCEPT'
+
+uci -q delete firewall.fttr_mdns
+uci set firewall.fttr_mdns='rule'
+uci set firewall.fttr_mdns.name='Allow-mDNS-from-FTTR'
+uci set firewall.fttr_mdns.src='wan'
+uci set firewall.fttr_mdns.src_ip='192.168.1.0/24'
+uci set firewall.fttr_mdns.proto='udp'
+uci set firewall.fttr_mdns.dest_port='5353'
+uci set firewall.fttr_mdns.target='ACCEPT'
+
+uci commit firewall
+
+# ============================================================
+# Avahi mDNS 反射
+# ============================================================
+/etc/init.d/avahi-daemon enable 2>/dev/null || true
+/etc/init.d/avahi-daemon restart 2>/dev/null || true
 
 # ============================================================
 # LuCI 默认语言
@@ -101,7 +412,6 @@ uci set autoupdate.@login[0].week='7'
 uci set autoupdate.@login[0].hour='3'
 uci set autoupdate.@login[0].minute='0'
 
-# 注入构建版本号（由 CI 在构建时写入 /etc/tutu_build_version）
 if [ -f /etc/tutu_build_version ]; then
     BUILD_VER=$(cat /etc/tutu_build_version)
     uci set autoupdate.@login[0].firmware_version="$BUILD_VER"
