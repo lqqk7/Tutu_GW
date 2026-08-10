@@ -294,6 +294,8 @@ set_redirect qbittorrent_36881 'qBittorrent' 'tcp' '36881' 'lan' '192.168.5.5' '
 set_redirect plex_32400 'PLEX' 'tcp' '32400' 'lan' '192.168.5.5' '32400'
 set_redirect wireguard_51820 'WireGuard' 'udp' '51820' 'wan' '192.168.1.70' '51820'
 set_redirect openviking_8443 'OpenViking' 'tcp' '8443' 'wan' '192.168.1.70' '8443'
+uci set firewall.wireguard_51820.src_dip='192.168.1.2'
+uci set firewall.openviking_8443.src_dip='192.168.1.2'
 
 uci -q delete firewall.fttr_dhcp
 uci set firewall.fttr_dhcp='rule'
