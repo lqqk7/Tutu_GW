@@ -14,22 +14,14 @@ SPEC.loader.exec_module(SYNC)
 
 
 class NodeFilterTest(unittest.TestCase):
-    def test_self_hosted_filters_are_in_priority_order(self):
+    def test_self_hosted_group_uses_one_combined_filter(self):
         self.assertEqual(
-            SYNC.SELF_HOSTED_FILTERS,
-            (
-                r"(?i).*RELAY.*",
-                r"(?i).*9929.*",
-            ),
-        )
-
-        self.assertEqual(
-            SYNC.SELF_HOSTED_GROUP_RULES,
-            "`".join(SYNC.SELF_HOSTED_FILTERS),
+            SYNC.SELF_HOSTED_GROUP_FILTER,
+            r"(?i).*(?:RELAY|9929).*",
         )
         for group in (SYNC.MANUAL_GROUP, SYNC.SELF_HOSTED_FALLBACK_GROUP):
-            positions = [group.index(rule) for rule in SYNC.SELF_HOSTED_FILTERS]
-            self.assertEqual(positions, sorted(positions), group)
+            self.assertEqual(group.count(SYNC.SELF_HOSTED_GROUP_FILTER), 1)
+            self.assertNotIn("`(?i).*9929.*`", group)
 
     def test_only_relay_or_9929_nodes_are_included(self):
         pattern = re.compile(SYNC.INCLUDE_REMARKS_FILTER)

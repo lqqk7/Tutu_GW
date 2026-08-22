@@ -22,17 +22,13 @@ AI_PROVIDER = Path("OC_Rules/rule/AI_Classical.yaml")
 AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
 SHADOWROCKET_AI_RULES = Path("rules/AI-All.list")
 
-SELF_HOSTED_FILTERS = (
-    r"(?i).*RELAY.*",
-    r"(?i).*9929.*",
-)
 INCLUDE_REMARKS_FILTER = r"(?i).*(?:RELAY|9929).*"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
 HEALTH_CHECK_URL = "https://www.gstatic.com/generate_204"
 
-SELF_HOSTED_GROUP_RULES = "`".join(SELF_HOSTED_FILTERS)
-MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`[]🏠 自建优先`{SELF_HOSTED_GROUP_RULES}`[]🎯 全球直连"
-SELF_HOSTED_FALLBACK_GROUP = f"custom_proxy_group=🏠 自建优先`fallback`{SELF_HOSTED_GROUP_RULES}`{HEALTH_CHECK_URL}`300,,50"
+SELF_HOSTED_GROUP_FILTER = INCLUDE_REMARKS_FILTER
+MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`[]🏠 自建优先`{SELF_HOSTED_GROUP_FILTER}`[]🎯 全球直连"
+SELF_HOSTED_FALLBACK_GROUP = f"custom_proxy_group=🏠 自建优先`fallback`{SELF_HOSTED_GROUP_FILTER}`{HEALTH_CHECK_URL}`300,,50"
 
 CUSTOM_RULESETS = [
     f"ruleset=🤖 AI服务,clash-classic:{RAW_BASE}/OC_Rules/rule/AI_Classical.yaml,28800",
