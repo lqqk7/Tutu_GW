@@ -22,19 +22,15 @@ AI_PROVIDER = Path("OC_Rules/rule/AI_Classical.yaml")
 AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
 SHADOWROCKET_AI_RULES = Path("rules/AI-All.list")
 
-SELF_HOSTED_NODES = (
-    "US-9929v3-TUTUGW",
-    "US-4837v2-TUTUGW",
-    "US-9929v4-TUTUGW",
+SELF_HOSTED_FILTERS = (
+    r"(?i).*relay.*",
+    r"(?i).*9929.*",
 )
-INCLUDE_REMARKS_FILTER = rf"(?i)^(?:{'|'.join(SELF_HOSTED_NODES)})$"
+INCLUDE_REMARKS_FILTER = r"(?i).*(?:relay|9929).*"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
 HEALTH_CHECK_URL = "https://www.gstatic.com/generate_204"
 
-SELF_HOSTED_NODE_FILTER = rf"(?i)^(?:🇺🇸\s*)?(?:{'|'.join(SELF_HOSTED_NODES)})$"
-SELF_HOSTED_GROUP_RULES = "`".join(
-    rf"(?i)^(?:🇺🇸\s*)?{name}$" for name in SELF_HOSTED_NODES
-)
+SELF_HOSTED_GROUP_RULES = "`".join(SELF_HOSTED_FILTERS)
 MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`[]🏠 自建优先`{SELF_HOSTED_GROUP_RULES}`[]🎯 全球直连"
 SELF_HOSTED_FALLBACK_GROUP = f"custom_proxy_group=🏠 自建优先`fallback`{SELF_HOSTED_GROUP_RULES}`{HEALTH_CHECK_URL}`300,,50"
 

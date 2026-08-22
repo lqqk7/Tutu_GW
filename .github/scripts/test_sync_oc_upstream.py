@@ -14,40 +14,35 @@ SPEC.loader.exec_module(SYNC)
 
 
 class NodeFilterTest(unittest.TestCase):
-    def test_self_hosted_nodes_are_exact_and_in_priority_order(self):
+    def test_self_hosted_filters_are_in_priority_order(self):
         self.assertEqual(
-            SYNC.SELF_HOSTED_NODES,
+            SYNC.SELF_HOSTED_FILTERS,
             (
-                "US-9929v3-TUTUGW",
-                "US-4837v2-TUTUGW",
-                "US-9929v4-TUTUGW",
+                r"(?i).*relay.*",
+                r"(?i).*9929.*",
             ),
         )
 
-        pattern = re.compile(SYNC.SELF_HOSTED_NODE_FILTER)
-        for name in SYNC.SELF_HOSTED_NODES:
-            self.assertIsNotNone(pattern.fullmatch(name), name)
-            self.assertIsNotNone(pattern.fullmatch(f"🇺🇸 {name}"), name)
-            self.assertNotIn(f"[]{name}", SYNC.MANUAL_GROUP)
-            self.assertNotIn(f"[]{name}", SYNC.SELF_HOSTED_FALLBACK_GROUP)
-
-        self.assertIsNone(pattern.fullmatch("🇺🇸 US-4837v1-TUTUGW"))
-
-        expected_rules = tuple(
-            rf"(?i)^(?:🇺🇸\s*)?{name}$" for name in SYNC.SELF_HOSTED_NODES
+        self.assertEqual(
+            SYNC.SELF_HOSTED_GROUP_RULES,
+            "`".join(SYNC.SELF_HOSTED_FILTERS),
         )
-        self.assertEqual(SYNC.SELF_HOSTED_GROUP_RULES, "`".join(expected_rules))
         for group in (SYNC.MANUAL_GROUP, SYNC.SELF_HOSTED_FALLBACK_GROUP):
-            positions = [group.index(rule) for rule in expected_rules]
+            positions = [group.index(rule) for rule in SYNC.SELF_HOSTED_FILTERS]
             self.assertEqual(positions, sorted(positions), group)
 
-    def test_only_self_hosted_nodes_are_included(self):
+    def test_only_relay_or_9929_nodes_are_included(self):
         pattern = re.compile(SYNC.INCLUDE_REMARKS_FILTER)
 
-        for name in SYNC.SELF_HOSTED_NODES:
+        for name in (
+            "US-9929v3-TUTUGW",
+            "US-9929v4-TUTUGW",
+            "US-relay-TUTUGW",
+            "🇺🇸 Premium-RELAY-01",
+        ):
             self.assertIsNotNone(pattern.fullmatch(name), name)
 
-        for name in ("美国-专线-AI", "D美国5-专线-AI", "机场节点"):
+        for name in ("US-4837v2-TUTUGW", "美国-专线-AI", "机场节点"):
             self.assertIsNone(pattern.fullmatch(name), name)
 
     def test_airport_configuration_is_removed(self):
