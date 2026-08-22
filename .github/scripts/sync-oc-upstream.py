@@ -27,10 +27,14 @@ INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
 HEALTH_CHECK_URL = "https://www.gstatic.com/generate_204"
 
 SELF_HOSTED_GROUP_FILTER = INCLUDE_REMARKS_FILTER
-SELF_HOSTED_PRIORITY = ("US-RELAY-TUTUGW", "US-9929-TUTUGW")
+SELF_HOSTED_RELAY_GROUP = "🔒 RELAY"
+SELF_HOSTED_9929_GROUP = "🔒 9929"
+SELF_HOSTED_PRIORITY = (SELF_HOSTED_RELAY_GROUP, SELF_HOSTED_9929_GROUP)
 SELF_HOSTED_PRIORITY_MEMBERS = "`".join(f"[]{name}" for name in SELF_HOSTED_PRIORITY)
 MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`[]🏠 自建优先`{SELF_HOSTED_GROUP_FILTER}`[]🎯 全球直连"
 SELF_HOSTED_FALLBACK_GROUP = f"custom_proxy_group=🏠 自建优先`fallback`{SELF_HOSTED_PRIORITY_MEMBERS}`{HEALTH_CHECK_URL}`300,,50"
+SELF_HOSTED_RELAY_PROVIDER_GROUP = f"custom_proxy_group={SELF_HOSTED_RELAY_GROUP}`select`(?i)^US-RELAY-TUTUGW$"
+SELF_HOSTED_9929_PROVIDER_GROUP = f"custom_proxy_group={SELF_HOSTED_9929_GROUP}`select`(?i)^US-9929-TUTUGW$"
 
 CUSTOM_RULESETS = [
     f"ruleset=🤖 AI服务,clash-classic:{RAW_BASE}/OC_Rules/rule/AI_Classical.yaml,28800",
@@ -42,6 +46,8 @@ CUSTOM_RULESETS = [
 CUSTOM_PROXY_GROUPS = [
     MANUAL_GROUP,
     SELF_HOSTED_FALLBACK_GROUP,
+    SELF_HOSTED_RELAY_PROVIDER_GROUP,
+    SELF_HOSTED_9929_PROVIDER_GROUP,
     "custom_proxy_group=🤖 AI服务`select`[]🚀 手动选择`[]🏠 自建优先",
     "custom_proxy_group=🖨️ AD5X切片`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
     "custom_proxy_group=🚀 GitHub`select`[]🚀 手动选择`[]🏠 自建优先`[]🎯 全球直连",

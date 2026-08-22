@@ -25,12 +25,20 @@ class NodeFilterTest(unittest.TestCase):
     def test_self_hosted_fallback_has_fixed_priority(self):
         self.assertEqual(
             SYNC.SELF_HOSTED_PRIORITY,
-            ("US-RELAY-TUTUGW", "US-9929-TUTUGW"),
+            (SYNC.SELF_HOSTED_RELAY_GROUP, SYNC.SELF_HOSTED_9929_GROUP),
         )
-        relay = SYNC.SELF_HOSTED_FALLBACK_GROUP.index("[]US-RELAY-TUTUGW")
-        fallback = SYNC.SELF_HOSTED_FALLBACK_GROUP.index("[]US-9929-TUTUGW")
+        relay = SYNC.SELF_HOSTED_FALLBACK_GROUP.index(f"[]{SYNC.SELF_HOSTED_RELAY_GROUP}")
+        fallback = SYNC.SELF_HOSTED_FALLBACK_GROUP.index(f"[]{SYNC.SELF_HOSTED_9929_GROUP}")
         self.assertLess(relay, fallback)
         self.assertNotIn(SYNC.SELF_HOSTED_GROUP_FILTER, SYNC.SELF_HOSTED_FALLBACK_GROUP)
+        self.assertNotIn("[]US-RELAY-TUTUGW", SYNC.SELF_HOSTED_FALLBACK_GROUP)
+        self.assertNotIn("[]US-9929-TUTUGW", SYNC.SELF_HOSTED_FALLBACK_GROUP)
+
+    def test_priority_helpers_filter_provider_nodes(self):
+        self.assertIn("(?i)^US-RELAY-TUTUGW$", SYNC.SELF_HOSTED_RELAY_PROVIDER_GROUP)
+        self.assertIn("(?i)^US-9929-TUTUGW$", SYNC.SELF_HOSTED_9929_PROVIDER_GROUP)
+        self.assertIn(SYNC.SELF_HOSTED_RELAY_PROVIDER_GROUP, SYNC.CUSTOM_PROXY_GROUPS)
+        self.assertIn(SYNC.SELF_HOSTED_9929_PROVIDER_GROUP, SYNC.CUSTOM_PROXY_GROUPS)
 
     def test_only_relay_or_9929_nodes_are_included(self):
         pattern = re.compile(SYNC.INCLUDE_REMARKS_FILTER)
