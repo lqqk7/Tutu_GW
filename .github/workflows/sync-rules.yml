@@ -27,7 +27,7 @@ jobs:
           grep -Fqx 'dns-server = https://cloudflare-dns.com/dns-query#proxy=fallback,https://dns.google/dns-query#proxy=fallback' rules/Tutu-GW.conf
           grep -Fqx 'fallback-dns-server = https://cloudflare-dns.com/dns-query#proxy=fallback,https://dns.google/dns-query#proxy=fallback' rules/Tutu-GW.conf
           grep -Fqx 'proxy-dns-server = 1.1.1.1,8.8.8.8' rules/Tutu-GW.conf
-          grep -Fqx 'fallback = fallback,US-9929v3-TUTU,US-4837v2-TUTU,US-9929v4-TUTU,timeout=5,interval=600,url=http://www.gstatic.com/generate_204' rules/Tutu-GW.conf
+          grep -Fqx 'fallback = fallback,US-RELAY-TUTU,US-9929-TUTU,timeout=5,interval=600,url=http://www.gstatic.com/generate_204' rules/Tutu-GW.conf
           ! grep -q '专线 A1-' rules/Tutu-GW.conf
           ! grep -Eiq '^((fallback-)?dns-server)[[:space:]]*=.*(dns\.alidns\.com|doh\.pub)' rules/Tutu-GW.conf
           grep -q '^# BEGIN UPSTREAM SR_CNIP MANAGED RULES$' rules/Tutu-GW.conf

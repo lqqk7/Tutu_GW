@@ -109,7 +109,7 @@ EXPECTED_DOH = (
     "https://dns.google/dns-query#proxy=fallback"
 )
 EXPECTED_PROXY_GROUP = (
-    "fallback = fallback,US-9929v3-TUTU,US-4837v2-TUTU,US-9929v4-TUTU,"
+    "fallback = fallback,US-RELAY-TUTU,US-9929-TUTU,"
     "timeout=5,interval=600,url=http://www.gstatic.com/generate_204"
 )
 
@@ -164,14 +164,14 @@ def main() -> int:
     fallback_parts = [part.strip() for part in EXPECTED_PROXY_GROUP.split(" = ", 1)[1].split(",")]
     require(fallback_parts[0] == "fallback", "fallback group must use the fallback type")
     require(
-        fallback_parts[1:4] == ["US-9929v3-TUTU", "US-4837v2-TUTU", "US-9929v4-TUTU"],
-        "the three self-hosted nodes must be first in the fallback group",
+        fallback_parts[1:3] == ["US-RELAY-TUTU", "US-9929-TUTU"],
+        "the two self-hosted nodes must be first in the fallback group",
     )
     options = fallback_parts[-3:]
     fallback_nodes = fallback_parts[1:-3]
-    require(len(fallback_nodes) == 3, "fallback group must contain exactly 3 nodes")
+    require(len(fallback_nodes) == 2, "fallback group must contain exactly 2 nodes")
     require(
-        fallback_nodes == ["US-9929v3-TUTU", "US-4837v2-TUTU", "US-9929v4-TUTU"],
+        fallback_nodes == ["US-RELAY-TUTU", "US-9929-TUTU"],
         "fallback group must contain only the ordered self-hosted nodes",
     )
     require(
