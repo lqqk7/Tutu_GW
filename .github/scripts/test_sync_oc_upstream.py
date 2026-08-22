@@ -18,7 +18,7 @@ class NodeFilterTest(unittest.TestCase):
         self.assertEqual(
             SYNC.SELF_HOSTED_FILTERS,
             (
-                r"(?i).*relay.*",
+                r"(?i).*RELAY.*",
                 r"(?i).*9929.*",
             ),
         )

@@ -23,10 +23,10 @@ AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
 SHADOWROCKET_AI_RULES = Path("rules/AI-All.list")
 
 SELF_HOSTED_FILTERS = (
-    r"(?i).*relay.*",
+    r"(?i).*RELAY.*",
     r"(?i).*9929.*",
 )
-INCLUDE_REMARKS_FILTER = r"(?i).*(?:relay|9929).*"
+INCLUDE_REMARKS_FILTER = r"(?i).*(?:RELAY|9929).*"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
 HEALTH_CHECK_URL = "https://www.gstatic.com/generate_204"
 
