@@ -14,14 +14,23 @@ SPEC.loader.exec_module(SYNC)
 
 
 class NodeFilterTest(unittest.TestCase):
-    def test_self_hosted_group_uses_one_combined_filter(self):
+    def test_manual_group_uses_one_combined_filter(self):
         self.assertEqual(
             SYNC.SELF_HOSTED_GROUP_FILTER,
             r"(?i).*(?:RELAY|9929).*",
         )
-        for group in (SYNC.MANUAL_GROUP, SYNC.SELF_HOSTED_FALLBACK_GROUP):
-            self.assertEqual(group.count(SYNC.SELF_HOSTED_GROUP_FILTER), 1)
-            self.assertNotIn("`(?i).*9929.*`", group)
+        self.assertEqual(SYNC.MANUAL_GROUP.count(SYNC.SELF_HOSTED_GROUP_FILTER), 1)
+        self.assertNotIn("`(?i).*9929.*`", SYNC.MANUAL_GROUP)
+
+    def test_self_hosted_fallback_has_fixed_priority(self):
+        self.assertEqual(
+            SYNC.SELF_HOSTED_PRIORITY,
+            ("US-RELAY-TUTUGW", "US-9929-TUTUGW"),
+        )
+        relay = SYNC.SELF_HOSTED_FALLBACK_GROUP.index("[]US-RELAY-TUTUGW")
+        fallback = SYNC.SELF_HOSTED_FALLBACK_GROUP.index("[]US-9929-TUTUGW")
+        self.assertLess(relay, fallback)
+        self.assertNotIn(SYNC.SELF_HOSTED_GROUP_FILTER, SYNC.SELF_HOSTED_FALLBACK_GROUP)
 
     def test_only_relay_or_9929_nodes_are_included(self):
         pattern = re.compile(SYNC.INCLUDE_REMARKS_FILTER)
