@@ -163,9 +163,15 @@ def is_forbidden_line(line: str) -> bool:
 
 
 def insert_custom_rulesets(lines: list[str]) -> list[str]:
-    anchor = "ruleset=🚀 手动选择,clash-classic:https://testingcf.jsdelivr.net/gh/Aethersailor/Custom_OpenClash_Rules@main/rule/Custom_Proxy_Classical_IP.yaml,28800"
-    if anchor not in lines:
-        raise RuntimeError("Upstream proxy ruleset anchor not found")
+    # Match the resource identity while allowing the upstream CDN host to change.
+    anchors = [line for line in lines if re.fullmatch(
+        r"ruleset=🚀 手动选择,clash-classic:https://[^/]+/gh/"
+        r"Aethersailor/Custom_OpenClash_Rules@main/rule/"
+        r"Custom_Proxy_Classical_IP\.yaml,\d+", line
+    )]
+    if len(anchors) != 1:
+        raise RuntimeError(f"Expected one upstream proxy ruleset anchor, found {len(anchors)}")
+    anchor = anchors[0]
 
     output: list[str] = []
     inserted = False

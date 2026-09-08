@@ -13,6 +13,27 @@ SYNC = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SYNC)
 
 
+class RulesetAnchorTest(unittest.TestCase):
+    def test_cdn_host_change_preserves_custom_rules(self):
+        for host in ("testingcf.jsdelivr.net", "cdn.jsdelivr.net"):
+            with self.subTest(host=host):
+                anchor = (
+                    f"ruleset=🚀 手动选择,clash-classic:https://{host}/gh/"
+                    "Aethersailor/Custom_OpenClash_Rules@main/rule/"
+                    "Custom_Proxy_Classical_IP.yaml,28800"
+                )
+                result = SYNC.insert_custom_rulesets([anchor])
+                self.assertEqual(result[0], anchor)
+                for rule in SYNC.CUSTOM_RULESETS:
+                    self.assertEqual(result.count(rule), 1)
+                with self.assertRaises(RuntimeError):
+                    SYNC.insert_custom_rulesets([anchor, anchor])
+
+    def test_missing_anchor_fails_closed(self):
+        with self.assertRaises(RuntimeError):
+            SYNC.insert_custom_rulesets(["[custom]"])
+
+
 class NodeFilterTest(unittest.TestCase):
     def test_manual_group_uses_one_combined_filter(self):
         self.assertEqual(

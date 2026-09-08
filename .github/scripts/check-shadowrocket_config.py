@@ -30,7 +30,7 @@ LOCAL_RULE_PREFIX = (
     "DOMAIN-SUFFIX,internal,DIRECT",
     "DOMAIN,captive.apple.com,DIRECT",
     "IP-CIDR,10.0.0.0/8,DIRECT,no-resolve",
-    "IP-CIDR,100.64.0.0/10,DIRECT,no-resolve",
+    "IP-CIDR,100.64.0.0/10,TAILSCALE,no-resolve",
     "IP-CIDR,127.0.0.0/8,DIRECT,no-resolve",
     "IP-CIDR,169.254.0.0/16,DIRECT,no-resolve",
     "IP-CIDR,172.16.0.0/12,DIRECT,no-resolve",
@@ -197,8 +197,9 @@ def main() -> int:
         "[Rule] must not contain the unbound PROXY policy",
     )
     require(
-        all(rule_policy(rule) in {"DIRECT", "REJECT", PROXY_POLICY} for rule in effective_rules),
-        "[Rule] contains a policy other than DIRECT, REJECT, or fallback",
+        all((rule_policy(rule) in {"DIRECT", "REJECT", PROXY_POLICY}
+             or rule == "IP-CIDR,100.64.0.0/10,TAILSCALE,no-resolve") for rule in effective_rules),
+        "[Rule] contains an unsupported policy (TAILSCALE is only allowed for 100.64.0.0/10)",
     )
     flashforge_targets = {
         tuple(rule.split(",")[:2]) for rule in FLASHFORGE_DIRECT_RULES
