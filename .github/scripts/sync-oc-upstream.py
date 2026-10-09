@@ -21,12 +21,17 @@ BASE_CONFIG = Path("OC_Rules/Custom_Clash_Base.yaml")
 AI_PROVIDER = Path("OC_Rules/rule/AI_Classical.yaml")
 AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
 SHADOWROCKET_AI_RULES = Path("rules/AI-All.list")
+POLYMARKET_RULES = Path("rules/Polymarket.list")
+POLYMARKET_PROVIDER = Path("OC_Rules/rule/Polymarket_Classical.yaml")
+POLYMARKET_GROUP = "Polymarket 国际站"
+POLYMARKET_RULESET = f"ruleset={POLYMARKET_GROUP},clash-classic:{RAW_BASE}/OC_Rules/rule/Polymarket_Classical.yaml,28800"
+POLYMARKET_PROXY_GROUP = f"custom_proxy_group={POLYMARKET_GROUP}`select`^HK-TUTUGW$"
 
-INCLUDE_REMARKS_FILTER = r"(?i).*(?:RELAY|9929).*"
+INCLUDE_REMARKS_FILTER = r"(?i)(?:.*(?:RELAY|9929).*|^HK-TUTUGW$)"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
 HEALTH_CHECK_URL = "https://www.gstatic.com/generate_204"
 
-SELF_HOSTED_GROUP_FILTER = INCLUDE_REMARKS_FILTER
+SELF_HOSTED_GROUP_FILTER = r"(?i).*(?:RELAY|9929).*"
 SELF_HOSTED_RELAY_GROUP = "🔒 RELAY"
 SELF_HOSTED_9929_GROUP = "🔒 9929"
 SELF_HOSTED_PRIORITY = (SELF_HOSTED_RELAY_GROUP, SELF_HOSTED_9929_GROUP)
@@ -44,6 +49,7 @@ CUSTOM_RULESETS = [
 ]
 
 CUSTOM_PROXY_GROUPS = [
+    POLYMARKET_PROXY_GROUP,
     MANUAL_GROUP,
     SELF_HOSTED_FALLBACK_GROUP,
     SELF_HOSTED_RELAY_PROVIDER_GROUP,
@@ -187,6 +193,15 @@ def insert_custom_rulesets(lines: list[str]) -> list[str]:
     return output
 
 
+def insert_polymarket_ruleset(lines: list[str]) -> list[str]:
+    # Private networks keep priority; service routing precedes every general rule.
+    anchor = "ruleset=🎯 全球直连,[]GEOIP,private,no-resolve"
+    if lines.count(anchor) != 1:
+        raise RuntimeError("Expected one private-network ruleset anchor")
+    index = lines.index(anchor) + 1
+    return [*lines[:index], POLYMARKET_RULESET, *lines[index:]]
+
+
 def insert_base_config(lines: list[str]) -> list[str]:
     base_line = f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml"
     without_existing = [
@@ -263,6 +278,13 @@ def write_custom_providers() -> None:
 
     write_classical_provider(AI_PROVIDER, ai_rules)
     write_classical_provider(AD5X_PROVIDER, AD5X_RULES)
+    polymarket_rules = [
+        rule for line in POLYMARKET_RULES.read_text(encoding="utf-8").splitlines()
+        if (rule := normalize_shadowrocket_rule(line))
+    ]
+    if not polymarket_rules:
+        raise RuntimeError("No Polymarket rules generated")
+    write_classical_provider(POLYMARKET_PROVIDER, polymarket_rules)
 
 
 def write_base_config() -> None:
@@ -276,6 +298,8 @@ def validate_generated(text: str) -> None:
         f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml",
         INCLUDE_REMARKS,
         *CUSTOM_RULESETS,
+        POLYMARKET_RULESET,
+        POLYMARKET_PROXY_GROUP,
         MANUAL_GROUP,
         SELF_HOSTED_FALLBACK_GROUP,
         "ruleset=🤖 AI服务,clash-classic:",
@@ -311,6 +335,7 @@ def main() -> int:
     lines = [line.rstrip() for line in upstream.replace("\r\n", "\n").splitlines()]
     lines = insert_base_config(lines)
     lines = insert_custom_rulesets(lines)
+    lines = insert_polymarket_ruleset(lines)
     lines = replace_proxy_groups(lines)
     output = "\n".join(lines).rstrip() + "\n"
     validate_generated(output)

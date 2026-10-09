@@ -191,13 +191,37 @@ def main() -> int:
         and lines.count("always-ip-address = true") == 1,
         "[General] must contain exactly one always-ip-address = true",
     )
+    polymarket_policy = "Polymarket 国际站"
+    polymarket_rules = [
+        f"{line.strip()},{polymarket_policy}"
+        for line in Path("rules/Polymarket.list").read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+    require(
+        proxy_groups.count(f"{polymarket_policy} = select,HK-TUTU") == 1,
+        "Polymarket must use only the exact HK-TUTU node",
+    )
+    require(
+        all("HK-TUTU" not in group for group in proxy_groups
+            if group != f"{polymarket_policy} = select,HK-TUTU"),
+        "HK-TUTU must not appear in general proxy groups",
+    )
     effective_rules = [line for line in rules if line and not line.startswith("#")]
+    require(
+        [rule for rule in effective_rules if rule_policy(rule) == polymarket_policy] == polymarket_rules,
+        "Polymarket rules must match the dedicated rule source exactly",
+    )
+    require(
+        effective_rules[len(LOCAL_RULE_PREFIX) + len(LOCAL_IPV6_RULES) + 1:]
+        [:len(polymarket_rules)] == polymarket_rules,
+        "Polymarket rules must precede general service and upstream rules",
+    )
     require(
         all(rule_policy(rule) != "PROXY" for rule in effective_rules),
         "[Rule] must not contain the unbound PROXY policy",
     )
     require(
-        all((rule_policy(rule) in {"DIRECT", "REJECT", PROXY_POLICY}
+        all((rule_policy(rule) in {"DIRECT", "REJECT", PROXY_POLICY, polymarket_policy}
              or rule == "IP-CIDR,100.64.0.0/10,TAILSCALE,no-resolve") for rule in effective_rules),
         "[Rule] contains an unsupported policy (TAILSCALE is only allowed for 100.64.0.0/10)",
     )

@@ -1,0 +1,13 @@
+# Polymarket international only. polymarket.us is intentionally excluded.
+# Verified 2026-10-10: official API docs and public homepage JavaScript.
+# https://docs.polymarket.com/api-reference/predictions/overview
+# https://polymarket.com/
+# The suffix covers website, Gamma/CLOB/Data, relayer/bridge, WS and future subdomains.
+# poly.market is the official referral/share short-link domain.
+# Dedicated combos API and S3 image bucket are matched by exact hostname.
+# No fixed IP-CIDR: Cloudflare/AWS addresses are shared and can change.
+# Shared Google/Magic/wallet infrastructure retains its existing route.
+DOMAIN-SUFFIX,polymarket.com
+DOMAIN-SUFFIX,poly.market
+DOMAIN,combos-rfq-api.polymarket.sh
+DOMAIN,polymarket-upload.s3.us-east-2.amazonaws.com
