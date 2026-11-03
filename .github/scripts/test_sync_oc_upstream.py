@@ -160,6 +160,30 @@ class ClientConfigTest(unittest.TestCase):
         self.assertEqual(client, SYNC.build_client_config(router))
         self.assertIn(SYNC.CLIENT_BASE_LINE, client)
         self.assertNotIn(SYNC.BASE_LINE, client)
+        self.assertNotIn("TUTUGW$", client)
+
+    def test_client_groups_accept_both_node_suffixes(self):
+        client = (ROOT / SYNC.CLIENT_TARGET).read_text().splitlines()
+        include = next(line for line in client if line.startswith("include_remarks="))
+        include_pattern = re.compile(include.removeprefix("include_remarks="))
+        groups = [line for line in client if line.startswith("custom_proxy_group=")]
+
+        def matched(node):
+            names = []
+            for group in groups:
+                filters = [part for part in group.split("`")[2:] if part.startswith(("(?i)", "^"))]
+                if any(re.search(pattern, node) for pattern in filters):
+                    names.append(group.split("`")[0].removeprefix("custom_proxy_group="))
+            return names
+
+        for suffix in ("TUTU", "TUTUGW"):
+            for node in (f"US-RELAY-{suffix}", f"US-9929-{suffix}", f"HK-{suffix}"):
+                self.assertIsNotNone(include_pattern.fullmatch(node), node)
+            self.assertIn(SYNC.SELF_HOSTED_RELAY_GROUP, matched(f"US-RELAY-{suffix}"))
+            self.assertIn(SYNC.SELF_HOSTED_9929_GROUP, matched(f"US-9929-{suffix}"))
+            self.assertEqual(matched(f"HK-{suffix}"), [SYNC.POLYMARKET_GROUP])
+        for node in ("HK-TUTU-2", "XHK-TUTU", "HK-TUTUG", "US-4837v2-TUTU"):
+            self.assertIsNone(include_pattern.fullmatch(node), node)
 
     def test_client_base_drops_gateway_settings(self):
         text = SYNC.CLIENT_BASE_CONFIG_TEXT

@@ -326,16 +326,34 @@ def write_base_config() -> None:
     CLIENT_BASE_CONFIG.write_text(CLIENT_BASE_CONFIG_TEXT, encoding="utf-8")
 
 
+# Client subscriptions use separate UUIDs and name nodes "-TUTU"; accept both suffixes.
+CLIENT_NODE_SUFFIX = "TUTU(?:GW)?"
+CLIENT_REPLACEMENTS = [
+    (BASE_LINE, CLIENT_BASE_LINE),
+    *(
+        (line, line.replace("TUTUGW$", f"{CLIENT_NODE_SUFFIX}$"))
+        for line in (
+            INCLUDE_REMARKS,
+            POLYMARKET_PROXY_GROUP,
+            SELF_HOSTED_RELAY_PROVIDER_GROUP,
+            SELF_HOSTED_9929_PROVIDER_GROUP,
+        )
+    ),
+]
+
+
 def build_client_config(text: str) -> str:
-    if text.count(BASE_LINE) != 1:
-        raise RuntimeError("Router base line not found exactly once")
-    return text.replace(BASE_LINE, CLIENT_BASE_LINE)
+    for old, new in CLIENT_REPLACEMENTS:
+        if text.count(old) != 1:
+            raise RuntimeError(f"Client config anchor not found exactly once: {old}")
+        text = text.replace(old, new)
+    return text
 
 
-def validate_generated(text: str, base_line: str = BASE_LINE) -> None:
+def validate_generated(text: str, replacements: list[tuple[str, str]] = []) -> None:
     required = [
         "[custom]",
-        base_line,
+        BASE_LINE,
         INCLUDE_REMARKS,
         *CUSTOM_RULESETS,
         POLYMARKET_RULESET,
@@ -347,6 +365,8 @@ def validate_generated(text: str, base_line: str = BASE_LINE) -> None:
         "enable_rule_generator=true",
         "overwrite_original_rules=true",
     ]
+    replaced = dict(replacements)
+    required = [replaced.get(item, item) for item in required]
     missing = [item for item in required if item not in text]
     if missing:
         raise RuntimeError(f"Generated config missing required content: {missing}")
@@ -380,7 +400,7 @@ def main() -> int:
     output = "\n".join(lines).rstrip() + "\n"
     validate_generated(output)
     client_output = build_client_config(output)
-    validate_generated(client_output, CLIENT_BASE_LINE)
+    validate_generated(client_output, CLIENT_REPLACEMENTS)
 
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     TARGET.write_text(output, encoding="utf-8")
