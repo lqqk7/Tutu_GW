@@ -24,8 +24,8 @@ BASE_LINE = f"clash_rule_base={RAW_BASE}/{BASE_CONFIG}"
 CLIENT_BASE_LINE = f"clash_rule_base={RAW_BASE}/{CLIENT_BASE_CONFIG}"
 AI_PROVIDER = Path("OC_Rules/rule/AI_Classical.yaml")
 AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
-SHADOWROCKET_AI_RULES = Path("rules/AI-All.list")
-POLYMARKET_RULES = Path("rules/Polymarket.list")
+AI_RULES = Path("OC_Rules/source/AI.list")
+POLYMARKET_RULES = Path("OC_Rules/source/Polymarket.list")
 POLYMARKET_PROVIDER = Path("OC_Rules/rule/Polymarket_Classical.yaml")
 POLYMARKET_GROUP = "Polymarket 国际站"
 POLYMARKET_RULESET = f"ruleset={POLYMARKET_GROUP},clash-classic:{RAW_BASE}/OC_Rules/rule/Polymarket_Classical.yaml,28800"
@@ -276,7 +276,7 @@ def replace_proxy_groups(lines: list[str]) -> list[str]:
     return [*lines[:start], *replacement, *lines[end + 1 :]]
 
 
-def normalize_shadowrocket_rule(line: str) -> str | None:
+def normalize_list_rule(line: str) -> str | None:
     line = re.split(r"\s+#", line.strip(), maxsplit=1)[0].strip()
     if not line or line.startswith("#"):
         return None
@@ -300,8 +300,8 @@ def write_classical_provider(path: Path, rules: list[str]) -> None:
 def write_custom_providers() -> None:
     ai_rules: list[str] = []
     seen: set[str] = set()
-    for line in SHADOWROCKET_AI_RULES.read_text(encoding="utf-8").splitlines():
-        rule = normalize_shadowrocket_rule(line)
+    for line in AI_RULES.read_text(encoding="utf-8").splitlines():
+        rule = normalize_list_rule(line)
         if rule and rule not in seen:
             ai_rules.append(rule)
             seen.add(rule)
@@ -313,7 +313,7 @@ def write_custom_providers() -> None:
     write_classical_provider(AD5X_PROVIDER, AD5X_RULES)
     polymarket_rules = [
         rule for line in POLYMARKET_RULES.read_text(encoding="utf-8").splitlines()
-        if (rule := normalize_shadowrocket_rule(line))
+        if (rule := normalize_list_rule(line))
     ]
     if not polymarket_rules:
         raise RuntimeError("No Polymarket rules generated")
