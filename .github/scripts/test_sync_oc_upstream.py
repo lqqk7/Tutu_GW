@@ -152,5 +152,26 @@ class NodeFilterTest(unittest.TestCase):
         self.assertNotIn("机场自动", config)
 
 
+
+class ClientConfigTest(unittest.TestCase):
+    def test_client_config_differs_only_by_base(self):
+        router = (ROOT / SYNC.TARGET).read_text()
+        client = (ROOT / SYNC.CLIENT_TARGET).read_text()
+        self.assertEqual(client, SYNC.build_client_config(router))
+        self.assertIn(SYNC.CLIENT_BASE_LINE, client)
+        self.assertNotIn(SYNC.BASE_LINE, client)
+
+    def test_client_base_drops_gateway_settings(self):
+        text = SYNC.CLIENT_BASE_CONFIG_TEXT
+        self.assertIn("allow-lan: false", text)
+        self.assertNotIn("listen: 0.0.0.0", text)
+        self.assertIn("tun:\n  enable: true", text)
+        self.assertIn("    - any:53", text)
+        self.assertEqual((ROOT / SYNC.CLIENT_BASE_CONFIG).read_text(), text)
+        router_dns = SYNC.BASE_CONFIG_TEXT.split("\ndns:\n", 1)[1]
+        client_dns = text.split("\ndns:\n", 1)[1]
+        self.assertEqual(client_dns, router_dns.replace("  listen: 0.0.0.0:7874\n", ""))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -18,6 +18,10 @@ RAW_BASE = os.environ.get(
 )
 TARGET = Path("OC_Rules/Custom_Clash_Lite.ini")
 BASE_CONFIG = Path("OC_Rules/Custom_Clash_Base.yaml")
+CLIENT_TARGET = Path("OC_Rules/Custom_Clash_Client.ini")
+CLIENT_BASE_CONFIG = Path("OC_Rules/Custom_Clash_Client_Base.yaml")
+BASE_LINE = f"clash_rule_base={RAW_BASE}/{BASE_CONFIG}"
+CLIENT_BASE_LINE = f"clash_rule_base={RAW_BASE}/{CLIENT_BASE_CONFIG}"
 AI_PROVIDER = Path("OC_Rules/rule/AI_Classical.yaml")
 AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
 SHADOWROCKET_AI_RULES = Path("rules/AI-All.list")
@@ -153,6 +157,35 @@ dns:
       - https://doh.pub/dns-query
 """
 
+# Desktop/mobile clients share the router rules; only the gateway-specific base differs.
+CLIENT_TUN_TEXT = """\
+tun:
+  enable: true
+  stack: mixed
+  auto-route: true
+  auto-detect-interface: true
+  dns-hijack:
+    - any:53
+
+"""
+
+
+def build_client_base_config() -> str:
+    replacements = [
+        ("allow-lan: true\n", "allow-lan: false\n"),
+        ("  listen: 0.0.0.0:7874\n", ""),
+        ("\nsniffer:\n", f"\n{CLIENT_TUN_TEXT}sniffer:\n"),
+    ]
+    text = BASE_CONFIG_TEXT
+    for old, new in replacements:
+        if text.count(old) != 1:
+            raise RuntimeError(f"Client base anchor not found exactly once: {old!r}")
+        text = text.replace(old, new)
+    return text
+
+
+CLIENT_BASE_CONFIG_TEXT = build_client_base_config()
+
 FORBIDDEN_RULE_HINTS = ("广告", "去广告", "拦截", "adblock", "reject")
 FORBIDDEN_REGION_GROUPS = ("🇭🇰", "🇯🇵", "🇸🇬", "🇼🇸", "🇰🇷", "香港节点", "日本节点", "新加坡节点", "台湾节点", "韩国节点")
 
@@ -203,7 +236,7 @@ def insert_polymarket_ruleset(lines: list[str]) -> list[str]:
 
 
 def insert_base_config(lines: list[str]) -> list[str]:
-    base_line = f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml"
+    base_line = BASE_LINE
     without_existing = [
         line
         for line in lines
@@ -290,12 +323,19 @@ def write_custom_providers() -> None:
 def write_base_config() -> None:
     BASE_CONFIG.parent.mkdir(parents=True, exist_ok=True)
     BASE_CONFIG.write_text(BASE_CONFIG_TEXT, encoding="utf-8")
+    CLIENT_BASE_CONFIG.write_text(CLIENT_BASE_CONFIG_TEXT, encoding="utf-8")
 
 
-def validate_generated(text: str) -> None:
+def build_client_config(text: str) -> str:
+    if text.count(BASE_LINE) != 1:
+        raise RuntimeError("Router base line not found exactly once")
+    return text.replace(BASE_LINE, CLIENT_BASE_LINE)
+
+
+def validate_generated(text: str, base_line: str = BASE_LINE) -> None:
     required = [
         "[custom]",
-        f"clash_rule_base={RAW_BASE}/OC_Rules/Custom_Clash_Base.yaml",
+        base_line,
         INCLUDE_REMARKS,
         *CUSTOM_RULESETS,
         POLYMARKET_RULESET,
@@ -339,12 +379,15 @@ def main() -> int:
     lines = replace_proxy_groups(lines)
     output = "\n".join(lines).rstrip() + "\n"
     validate_generated(output)
+    client_output = build_client_config(output)
+    validate_generated(client_output, CLIENT_BASE_LINE)
 
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     TARGET.write_text(output, encoding="utf-8")
+    CLIENT_TARGET.write_text(client_output, encoding="utf-8")
     write_base_config()
     write_custom_providers()
-    print(f"Synced OpenClash Lite config into {TARGET}")
+    print(f"Synced OpenClash Lite config into {TARGET} and {CLIENT_TARGET}")
     return 0
 
 
