@@ -24,6 +24,7 @@ BASE_LINE = f"clash_rule_base={RAW_BASE}/{BASE_CONFIG}"
 CLIENT_BASE_LINE = f"clash_rule_base={RAW_BASE}/{CLIENT_BASE_CONFIG}"
 AI_PROVIDER = Path("OC_Rules/rule/AI_Classical.yaml")
 AD5X_PROVIDER = Path("OC_Rules/rule/AD5X_Classical.yaml")
+CN_HTTPDNS_PROVIDER = Path("OC_Rules/rule/CN_HTTPDNS_Classical.yaml")
 AI_RULES = Path("OC_Rules/source/AI.list")
 POLYMARKET_RULES = Path("OC_Rules/source/Polymarket.list")
 POLYMARKET_PROVIDER = Path("OC_Rules/rule/Polymarket_Classical.yaml")
@@ -48,6 +49,8 @@ SELF_HOSTED_9929_PROVIDER_GROUP = f"custom_proxy_group={SELF_HOSTED_9929_GROUP}`
 CUSTOM_RULESETS = [
     f"ruleset=🤖 AI服务,clash-classic:{RAW_BASE}/OC_Rules/rule/AI_Classical.yaml,28800",
     f"ruleset=🖨️ AD5X切片,clash-classic:{RAW_BASE}/OC_Rules/rule/AD5X_Classical.yaml,28800",
+    # WeChat picks upload servers via its HTTPDNS; resolving it abroad breaks image sends.
+    f"ruleset=🎯 全球直连,clash-classic:{RAW_BASE}/OC_Rules/rule/CN_HTTPDNS_Classical.yaml,28800",
     "ruleset=🚀 手动选择,clash-domain:https://testingcf.jsdelivr.net/gh/Aethersailor/Custom_OpenClash_Rules@main/rule/Encrypted_DNS_Domain.yaml,28800",
     "ruleset=🚀 手动选择,clash-classic:https://testingcf.jsdelivr.net/gh/Aethersailor/Custom_OpenClash_Rules@main/rule/Encrypted_DNS_Classical_IP.yaml,28800",
 ]
@@ -82,6 +85,16 @@ AD5X_RULES = [
     "DOMAIN,httpdns.n.netease.com",
     "DOMAIN,nos.netease.com",
     "DOMAIN-SUFFIX,chatnos.com",
+]
+
+CN_HTTPDNS_RULES = [
+    "DOMAIN-SUFFIX,dns.weixin.qq.com",
+    "DOMAIN-SUFFIX,dns.weixin.qq.com.cn",
+    "DOMAIN-SUFFIX,udns.weixin.qq.com",
+    "DOMAIN-SUFFIX,dns.wechat.com",
+    "DOMAIN-SUFFIX,paydns.weixin.qq.com",
+    "DOMAIN-SUFFIX,paydns.wechatpay.cn",
+    "DOMAIN-SUFFIX,dns.qq.com",
 ]
 
 BASE_CONFIG_TEXT = """\
@@ -311,6 +324,7 @@ def write_custom_providers() -> None:
 
     write_classical_provider(AI_PROVIDER, ai_rules)
     write_classical_provider(AD5X_PROVIDER, AD5X_RULES)
+    write_classical_provider(CN_HTTPDNS_PROVIDER, CN_HTTPDNS_RULES)
     polymarket_rules = [
         rule for line in POLYMARKET_RULES.read_text(encoding="utf-8").splitlines()
         if (rule := normalize_list_rule(line))

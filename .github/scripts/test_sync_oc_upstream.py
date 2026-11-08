@@ -29,6 +29,15 @@ class RulesetAnchorTest(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     SYNC.insert_custom_rulesets([anchor, anchor])
 
+    def test_cn_httpdns_direct_precedes_encrypted_dns_proxy(self):
+        config = (ROOT / SYNC.TARGET).read_text().splitlines()
+        direct = next(i for i, line in enumerate(config) if "CN_HTTPDNS_Classical.yaml" in line)
+        encrypted = next(i for i, line in enumerate(config) if "Encrypted_DNS_Domain.yaml" in line)
+        self.assertLess(direct, encrypted)
+        self.assertTrue(config[direct].startswith("ruleset=🎯 全球直连,"))
+        provider = (ROOT / SYNC.CN_HTTPDNS_PROVIDER).read_text()
+        self.assertIn("DOMAIN-SUFFIX,dns.weixin.qq.com", provider)
+
     def test_missing_anchor_fails_closed(self):
         with self.assertRaises(RuntimeError):
             SYNC.insert_custom_rulesets(["[custom]"])

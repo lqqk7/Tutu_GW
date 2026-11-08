@@ -1,0 +1,8 @@
+payload:
+  - DOMAIN-SUFFIX,dns.weixin.qq.com
+  - DOMAIN-SUFFIX,dns.weixin.qq.com.cn
+  - DOMAIN-SUFFIX,udns.weixin.qq.com
+  - DOMAIN-SUFFIX,dns.wechat.com
+  - DOMAIN-SUFFIX,paydns.weixin.qq.com
+  - DOMAIN-SUFFIX,paydns.wechatpay.cn
+  - DOMAIN-SUFFIX,dns.qq.com
