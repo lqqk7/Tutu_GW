@@ -1,0 +1,16 @@
+mixed-port: 7893
+allow-lan: false
+mode: rule
+log-level: info
+ipv6: true
+rule-providers:
+  Tutu_IPv6_Block:
+    type: inline
+    behavior: classical
+    payload:
+    - IP-CIDR6,::/0,no-resolve
+  Tutu_QUIC_Block:
+    type: inline
+    behavior: classical
+    payload:
+    - AND,((NETWORK,UDP),(DST-PORT,443))

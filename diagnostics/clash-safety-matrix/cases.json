@@ -1,0 +1,77 @@
+[
+  {
+    "name": "control-old-branch-base",
+    "ini": "diagnostics/clash-safety-matrix/control-old-branch-base.ini",
+    "base": "diagnostics/clash-safety-matrix/base-control-old-branch-base.yaml"
+  },
+  {
+    "name": "native-min",
+    "ini": "diagnostics/clash-safety-matrix/native-min.ini",
+    "base": "diagnostics/clash-safety-matrix/base-native-min.yaml"
+  },
+  {
+    "name": "native-empty-min",
+    "ini": "diagnostics/clash-safety-matrix/native-empty-min.ini",
+    "base": "diagnostics/clash-safety-matrix/base-native-empty-min.yaml"
+  },
+  {
+    "name": "native-static-reject-min",
+    "ini": "diagnostics/clash-safety-matrix/native-static-reject-min.ini",
+    "base": "diagnostics/clash-safety-matrix/base-native-static-reject-min.yaml"
+  },
+  {
+    "name": "inline-min",
+    "ini": "diagnostics/clash-safety-matrix/inline-min.ini",
+    "base": "diagnostics/clash-safety-matrix/base-inline-min.yaml"
+  },
+  {
+    "name": "full-current",
+    "ini": "diagnostics/clash-safety-matrix/full-current.ini",
+    "base": "diagnostics/clash-safety-matrix/base-full-current.yaml"
+  },
+  {
+    "name": "full-native-empty",
+    "ini": "diagnostics/clash-safety-matrix/full-native-empty.ini",
+    "base": "diagnostics/clash-safety-matrix/base-full-native-empty.yaml"
+  },
+  {
+    "name": "full-no-native",
+    "ini": "diagnostics/clash-safety-matrix/full-no-native.ini",
+    "base": "diagnostics/clash-safety-matrix/base-full-no-native.yaml"
+  },
+  {
+    "name": "full-no-inline",
+    "ini": "diagnostics/clash-safety-matrix/full-no-inline.ini",
+    "base": "diagnostics/clash-safety-matrix/base-full-no-inline.yaml"
+  },
+  {
+    "name": "full-no-inline-native-empty",
+    "ini": "diagnostics/clash-safety-matrix/full-no-inline-native-empty.ini",
+    "base": "diagnostics/clash-safety-matrix/base-full-no-inline-native-empty.yaml"
+  },
+  {
+    "name": "full-no-guards",
+    "ini": "diagnostics/clash-safety-matrix/full-no-guards.ini",
+    "base": "diagnostics/clash-safety-matrix/base-full-no-guards.yaml"
+  },
+  {
+    "name": "full-no-native-no-inline",
+    "ini": "diagnostics/clash-safety-matrix/full-no-native-no-inline.ini",
+    "base": "diagnostics/clash-safety-matrix/base-full-no-native-no-inline.yaml"
+  },
+  {
+    "name": "full-new-tun-only",
+    "ini": "diagnostics/clash-safety-matrix/full-new-tun-only.ini",
+    "base": "diagnostics/clash-safety-matrix/base-full-new-tun-only.yaml"
+  },
+  {
+    "name": "full-remote-safety-native-empty",
+    "ini": "diagnostics/clash-safety-matrix/full-remote-safety-native-empty.ini",
+    "base": "diagnostics/clash-safety-matrix/base-full-remote-safety-native-empty.yaml"
+  },
+  {
+    "name": "full-direct-and-native-empty",
+    "ini": "diagnostics/clash-safety-matrix/full-direct-and-native-empty.ini",
+    "base": "diagnostics/clash-safety-matrix/base-full-direct-and-native-empty.yaml"
+  }
+]

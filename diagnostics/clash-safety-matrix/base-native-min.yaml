@@ -1,0 +1,18 @@
+mixed-port: 7893
+allow-lan: false
+mode: rule
+log-level: info
+ipv6: true
+proxy-groups:
+- name: 🚀 手动选择
+  type: select
+  include-all-proxies: true
+  include-all-providers: true
+  filter: (?i)^US-RELAY-.+$
+  empty-fallback: REJECT
+- name: Polymarket 国际站
+  type: select
+  include-all-proxies: true
+  include-all-providers: true
+  filter: (?i)^HK-.+$
+  empty-fallback: REJECT
