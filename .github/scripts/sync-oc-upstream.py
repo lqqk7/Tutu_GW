@@ -32,13 +32,20 @@ POLYMARKET_GROUP = "Polymarket 国际站"
 POLYMARKET_RULESET = f"ruleset={POLYMARKET_GROUP},clash-classic:{RAW_BASE}/OC_Rules/rule/Polymarket_Classical.yaml,28800"
 AI_RULESET = f"ruleset=🤖 AI服务,clash-classic:{RAW_BASE}/OC_Rules/rule/AI_Classical.yaml,28800"
 POLYMARKET_NODE_FILTER = r"(?i)^HK-.+$"
-POLYMARKET_PROXY_GROUP = f"custom_proxy_group={POLYMARKET_GROUP}`select`{POLYMARKET_NODE_FILTER}"
 
 INCLUDE_REMARKS_FILTER = r"(?i)^(?:US-RELAY|HK)-.+$"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
 
 MANUAL_NODE_FILTER = r"(?i)^US-RELAY-.+$"
-MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`{MANUAL_NODE_FILTER}`[]🎯 全球直连"
+
+# Native groups preserve provider filtering and reject empty subscriptions without
+# adding a static REJECT member ahead of the provider's actual nodes.
+PROTECTED_GROUPS = {
+    "🚀 手动选择": MANUAL_NODE_FILTER,
+    POLYMARKET_GROUP: POLYMARKET_NODE_FILTER,
+}
+IPV6_BLOCK_RULESET = "ruleset=REJECT,[]RULE-SET,Tutu_IPv6_Block"
+QUIC_BLOCK_RULESET = "ruleset=REJECT,[]RULE-SET,Tutu_QUIC_Block"
 
 CUSTOM_RULESETS = [
     f"ruleset=🖨️ AD5X切片,clash-classic:{RAW_BASE}/OC_Rules/rule/AD5X_Classical.yaml,28800",
@@ -49,8 +56,6 @@ CUSTOM_RULESETS = [
 ]
 
 CUSTOM_PROXY_GROUPS = [
-    POLYMARKET_PROXY_GROUP,
-    MANUAL_GROUP,
     "custom_proxy_group=🤖 AI服务`select`[]🚀 手动选择",
     "custom_proxy_group=🖨️ AD5X切片`select`[]🎯 全球直连`[]🚀 手动选择",
     "custom_proxy_group=🚀 GitHub`select`[]🚀 手动选择`[]🎯 全球直连",
@@ -99,6 +104,32 @@ tcp-concurrent: true
 profile:
   store-selected: true
   store-fake-ip: true
+
+proxy-groups:
+  - name: 🚀 手动选择
+    type: select
+    include-all-proxies: true
+    include-all-providers: true
+    filter: '(?i)^US-RELAY-.+$'
+    empty-fallback: REJECT
+  - name: Polymarket 国际站
+    type: select
+    include-all-proxies: true
+    include-all-providers: true
+    filter: '(?i)^HK-.+$'
+    empty-fallback: REJECT
+
+rule-providers:
+  Tutu_IPv6_Block:
+    type: inline
+    behavior: classical
+    payload:
+      - IP-CIDR6,::/0,no-resolve
+  Tutu_QUIC_Block:
+    type: inline
+    behavior: classical
+    payload:
+      - AND,((NETWORK,UDP),(DST-PORT,443))
 
 sniffer:
   enable: true
@@ -167,14 +198,22 @@ tun:
   stack: mixed
   auto-route: true
   auto-detect-interface: true
+  strict-route: true
+  dns-mode: hijack
+  inet6-address:
+    - fdfe:dcba:9876::1/126
   dns-hijack:
     - any:53
+    - tcp://any:53
 
 """
 
 
 def build_client_base_config() -> str:
     replacements = [
+        # Capture native IPv6 into TUN and reject it before all routing rules.
+        # dns.ipv6 stays false: enabling IPv6 ingress is not enabling IPv6 egress.
+        ("\nipv6: false\n", "\nipv6: true\n"),
         ("allow-lan: true\n", "allow-lan: false\n"),
         ("  listen: 0.0.0.0:7874\n", ""),
         ("\nsniffer:\n", f"\n{CLIENT_TUN_TEXT}sniffer:\n"),
@@ -235,7 +274,24 @@ def insert_priority_rulesets(lines: list[str]) -> list[str]:
     if lines.count(anchor) != 1:
         raise RuntimeError("Expected one private-network ruleset anchor")
     index = lines.index(anchor) + 1
-    return [*lines[:index], POLYMARKET_RULESET, AI_RULESET, *lines[index:]]
+    output = [*lines[:index], QUIC_BLOCK_RULESET, POLYMARKET_RULESET, AI_RULESET, *lines[index:]]
+    # IPv6 must be blocked even when its destination belongs to a private range.
+    first_rule = next(i for i, line in enumerate(output) if line.startswith("ruleset="))
+    output.insert(first_rule, IPV6_BLOCK_RULESET)
+    return output
+
+
+def insert_fail_closed_guards(lines: list[str]) -> list[str]:
+    # Mihomo skips a rule when its selected proxy cannot carry UDP. Repeat the
+    # same match with REJECT so it cannot fall through to a later direct rule.
+    output: list[str] = []
+    for line in lines:
+        output.append(line)
+        if line.startswith("ruleset="):
+            group, match = line.removeprefix("ruleset=").split(",", 1)
+            if group not in {"REJECT", "🎯 全球直连"}:
+                output.append(f"ruleset=REJECT,{match}")
+    return output
 
 
 def insert_base_config(lines: list[str]) -> list[str]:
@@ -355,8 +411,8 @@ def validate_generated(text: str, replacements: list[tuple[str, str]] = []) -> N
         *CUSTOM_RULESETS,
         POLYMARKET_RULESET,
         AI_RULESET,
-        POLYMARKET_PROXY_GROUP,
-        MANUAL_GROUP,
+        IPV6_BLOCK_RULESET,
+        QUIC_BLOCK_RULESET,
         "ruleset=🤖 AI服务,clash-classic:",
         "ruleset=🖨️ AD5X切片,clash-classic:",
         "enable_rule_generator=true",
@@ -377,8 +433,15 @@ def validate_generated(text: str, replacements: list[tuple[str, str]] = []) -> N
     if forbidden:
         raise RuntimeError(f"Forbidden non-US proxy groups remain: {forbidden}")
 
-    if any(is_forbidden_line(line) for line in text.splitlines()):
+    # Only our explicit security guards may reject. Upstream ad filtering is
+    # still removed before guards are inserted.
+    if any(is_forbidden_line(line) for line in text.splitlines()
+           if not line.startswith("ruleset=REJECT,")):
         raise RuntimeError("Forbidden ad-block/reject content remains")
+
+    if any(line.startswith(f"custom_proxy_group={group}`")
+           for group in PROTECTED_GROUPS for line in text.splitlines()):
+        raise RuntimeError("Native fail-closed groups must not be replaced by converter groups")
 
     if "全部节点" in text:
         raise RuntimeError("Redundant all-nodes group remains")
@@ -396,6 +459,7 @@ def main() -> int:
     lines = insert_base_config(lines)
     lines = insert_custom_rulesets(lines)
     lines = insert_priority_rulesets(lines)
+    lines = insert_fail_closed_guards(lines)
     lines = replace_proxy_groups(lines)
     output = "\n".join(lines).rstrip() + "\n"
     validate_generated(output)

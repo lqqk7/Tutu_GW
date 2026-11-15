@@ -13,6 +13,25 @@ SYNC = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SYNC)
 
 
+def native_groups(text):
+    """Read the generated scalar group fields without a YAML dependency."""
+    section = text.split("\nproxy-groups:\n", 1)[1].split("\nrule-providers:\n", 1)[0]
+    groups = {}
+    current = None
+    for line in section.splitlines():
+        if line.startswith("  - name: "):
+            current = line.removeprefix("  - name: ")
+            groups[current] = {}
+        elif line.strip():
+            key, value = line.strip().split(":", 1)
+            groups[current][key] = value.strip().strip("'\"")
+    return groups
+
+
+def rulesets(text):
+    return [line for line in text.splitlines() if line.startswith("ruleset=")]
+
+
 class RulesetAnchorTest(unittest.TestCase):
     def test_cdn_host_change_preserves_custom_rules(self):
         for host in ("testingcf.jsdelivr.net", "cdn.jsdelivr.net"):
@@ -56,16 +75,15 @@ class NodeFilterTest(unittest.TestCase):
             self.assertIsNone(pattern.search(node), node)
 
     def test_hk_is_exclusive_to_polymarket(self):
+        groups = native_groups((ROOT / SYNC.BASE_CONFIG).read_text())
         for suffix in ("TUTUGW", "TUTU", "xxxx", "new-node-2"):
             for prefix, expected in (("HK", SYNC.POLYMARKET_GROUP),
                                      ("US-RELAY", "🚀 手动选择")):
                 node = f"{prefix}-{suffix}"
                 matched = []
-                for group in SYNC.CUSTOM_PROXY_GROUPS:
-                    filters = [part for part in group.split("`")[2:]
-                               if part.startswith(("(?i)", "^"))]
-                    if any(re.search(pattern, node) for pattern in filters):
-                        matched.append(group.split("`")[0].removeprefix("custom_proxy_group="))
+                for name, fields in groups.items():
+                    if re.search(fields["filter"], node):
+                        matched.append(name)
                 self.assertEqual(matched, [expected], node)
         self.assertNotIn(f"[]{SYNC.POLYMARKET_GROUP}", "\n".join(SYNC.CUSTOM_PROXY_GROUPS))
 
@@ -74,26 +92,71 @@ class NodeFilterTest(unittest.TestCase):
         text = "\n".join(groups)
         for legacy in ("自建优先", "9929", "🔒 RELAY", "`fallback`", "机场自动"):
             self.assertNotIn(legacy, text)
-        names = {line.split("`")[0].removeprefix("custom_proxy_group=") for line in groups}
+        names = ({line.split("`")[0].removeprefix("custom_proxy_group=") for line in groups}
+                 | set(SYNC.PROTECTED_GROUPS))
         for line in groups:
             for part in line.split("`")[2:]:
                 if part.startswith("[]"):
-                    self.assertIn(part[2:], names | {"DIRECT"})
-        self.assertTrue(SYNC.MANUAL_GROUP.endswith("`[]🎯 全球直连"))
+                    self.assertIn(part[2:], names | {"DIRECT", "REJECT"})
+        for name in SYNC.PROTECTED_GROUPS:
+            self.assertNotIn(f"custom_proxy_group={name}`", text)
+
+    def test_native_groups_reject_empty_node_and_provider_filters(self):
+        for path in (SYNC.BASE_CONFIG, SYNC.CLIENT_BASE_CONFIG):
+            groups = native_groups((ROOT / path).read_text())
+            self.assertEqual(set(groups), {"🚀 手动选择", SYNC.POLYMARKET_GROUP})
+            for name, expected_filter in SYNC.PROTECTED_GROUPS.items():
+                fields = groups[name]
+                self.assertEqual(fields["type"], "select")
+                self.assertEqual(fields["include-all-proxies"], "true")
+                self.assertEqual(fields["include-all-providers"], "true")
+                self.assertEqual(fields["filter"], expected_filter)
+                self.assertEqual(fields["empty-fallback"], "REJECT")
+                self.assertNotIn("proxies", fields, "A static REJECT member can preempt provider nodes")
+                self.assertNotIn("use", fields, "Provider names must not be pinned to one subscription")
+                for nodes in ([], ["unrelated"], ["DIRECT", "COMPATIBLE", "🎯 全球直连"],
+                              ["HK-test"] if name == "🚀 手动选择" else ["US-RELAY-test"]):
+                    self.assertEqual([node for node in nodes if re.search(fields["filter"], node)], [])
+
+    def test_ai_group_cannot_reach_direct_or_hk(self):
+        for path in (SYNC.TARGET, SYNC.CLIENT_TARGET):
+            config = (ROOT / path).read_text()
+            graph = {}
+            for line in config.splitlines():
+                if line.startswith("custom_proxy_group="):
+                    name, _, *members = line.removeprefix("custom_proxy_group=").split("`")
+                    graph[name] = [member[2:] for member in members if member.startswith("[]")]
+            base_path = SYNC.CLIENT_BASE_CONFIG if path == SYNC.CLIENT_TARGET else SYNC.BASE_CONFIG
+            for name, fields in native_groups((ROOT / base_path).read_text()).items():
+                graph[name] = [fields["empty-fallback"]]
+                graph[name].extend(node for node in ("US-RELAY-test", "HK-test", "DIRECT", "COMPATIBLE")
+                                   if re.search(fields["filter"], node))
+            def leaves(name, ancestors=()):
+                self.assertNotIn(name, ancestors, "Proxy group cycle")
+                if name not in graph:
+                    return {name}
+                return set().union(*(leaves(member, (*ancestors, name)) for member in graph[name]))
+            self.assertEqual(leaves("🤖 AI服务"), {"US-RELAY-test", "REJECT"})
+            self.assertEqual(leaves(SYNC.POLYMARKET_GROUP), {"HK-test", "REJECT"})
 
     def test_service_rules_precede_general_rules(self):
         anchor = "ruleset=🎯 全球直连,[]GEOIP,private,no-resolve"
         general = "ruleset=🚀 手动选择,[]GEOSITE,gfw"
         result = SYNC.insert_priority_rulesets([anchor, general])
-        self.assertEqual(result, [anchor, SYNC.POLYMARKET_RULESET, SYNC.AI_RULESET, general])
+        self.assertEqual(result, [SYNC.IPV6_BLOCK_RULESET, anchor, SYNC.QUIC_BLOCK_RULESET,
+                                  SYNC.POLYMARKET_RULESET, SYNC.AI_RULESET, general])
         with self.assertRaises(RuntimeError):
             SYNC.insert_priority_rulesets([general])
         with self.assertRaises(RuntimeError):
             SYNC.insert_priority_rulesets([anchor, anchor])
-        config = (ROOT / "OC_Rules/Custom_Clash_Lite.ini").read_text()
-        rulesets = [line for line in config.splitlines() if line.startswith("ruleset=")]
-        self.assertEqual(rulesets[2:4], [SYNC.POLYMARKET_RULESET, SYNC.AI_RULESET])
-        self.assertIn(SYNC.POLYMARKET_PROXY_GROUP, config)
+        for path in (SYNC.TARGET, SYNC.CLIENT_TARGET):
+            rules = rulesets((ROOT / path).read_text())
+            self.assertEqual(rules[0], SYNC.IPV6_BLOCK_RULESET)
+            self.assertLess(rules.index(anchor), rules.index(SYNC.QUIC_BLOCK_RULESET))
+            self.assertLess(rules.index(SYNC.QUIC_BLOCK_RULESET), rules.index(SYNC.POLYMARKET_RULESET))
+            self.assertLess(rules.index(SYNC.POLYMARKET_RULESET), rules.index(SYNC.AI_RULESET))
+            self.assertLess(rules.index(SYNC.AI_RULESET), next(i for i, line in enumerate(rules)
+                                                            if "Custom_Direct_Domain" in line))
 
     def test_polymarket_provider_matches_source(self):
         source = [line for line in SYNC.POLYMARKET_RULES.read_text().splitlines()
@@ -131,6 +194,9 @@ class AIProviderTest(unittest.TestCase):
         provider = (ROOT / SYNC.AI_PROVIDER).read_text().splitlines()[1:]
         self.assertEqual(provider, [f"  - {rule}" for rule in source])
         for rule in ("DOMAIN-SUFFIX,claudemcpcontent.com",
+                     "DOMAIN-SUFFIX,claude.ai", "DOMAIN-SUFFIX,openai.com",
+                     "DOMAIN-SUFFIX,chatgpt.com", "DOMAIN-SUFFIX,cursor.com",
+                     "DOMAIN-SUFFIX,github.com",
                      "DOMAIN,http-intake.logs.us5.datadoghq.com",
                      "DOMAIN-SUFFIX,withpersona.com", "DOMAIN-SUFFIX,frompersona.com",
                      "IP-CIDR,160.79.104.0/23,no-resolve",
@@ -146,6 +212,47 @@ class AIProviderTest(unittest.TestCase):
                      "IP-CIDR6,2607:6bc0::/48,no-resolve"):
             self.assertEqual(SYNC.normalize_list_rule(rule + " # note"), rule)
         self.assertIsNone(SYNC.normalize_list_rule("# comment"))
+
+
+class FailClosedGuardTest(unittest.TestCase):
+    def test_guards_cover_proxy_rules_and_final_but_preserve_direct(self):
+        direct = "ruleset=🎯 全球直连,[]GEOSITE,cn"
+        proxy = "ruleset=🤖 AI服务,clash-classic:https://example.org/AI.yaml,28800"
+        final = "ruleset=🐟 漏网之鱼,[]FINAL"
+        self.assertEqual(SYNC.insert_fail_closed_guards([direct, proxy, final]), [
+            direct, proxy, "ruleset=REJECT,clash-classic:https://example.org/AI.yaml,28800",
+            final, "ruleset=REJECT,[]FINAL",
+        ])
+
+    def test_every_generated_proxy_rule_has_an_adjacent_reject_guard(self):
+        for path in (SYNC.TARGET, SYNC.CLIENT_TARGET):
+            rules = rulesets((ROOT / path).read_text())
+            for index, line in enumerate(rules):
+                group, match = line.removeprefix("ruleset=").split(",", 1)
+                if group not in {"REJECT", "🎯 全球直连"}:
+                    self.assertLess(index + 1, len(rules))
+                    self.assertEqual(rules[index + 1], f"ruleset=REJECT,{match}")
+                elif group == "REJECT" and line not in {SYNC.IPV6_BLOCK_RULESET, SYNC.QUIC_BLOCK_RULESET}:
+                    self.assertGreater(index, 0)
+                    previous_group, previous_match = rules[index - 1].removeprefix("ruleset=").split(",", 1)
+                    self.assertNotIn(previous_group, {"REJECT", "🎯 全球直连"})
+                    self.assertEqual(match, previous_match)
+            for direct in ("[]GEOSITE,private", "[]GEOIP,private,no-resolve", "[]GEOSITE,cn",
+                           "[]GEOIP,cn,no-resolve", "[]GEOSITE,category-games@cn"):
+                self.assertIn(f"ruleset=🎯 全球直连,{direct}", rules)
+            self.assertNotRegex("\n".join(rules), r"(?i)广告|去广告|拦截|adblock")
+
+    def test_security_payloads_use_inline_rule_sets(self):
+        for path in (SYNC.BASE_CONFIG, SYNC.CLIENT_BASE_CONFIG):
+            text = (ROOT / path).read_text()
+            for name, payload in (("Tutu_IPv6_Block", "IP-CIDR6,::/0,no-resolve"),
+                                  ("Tutu_QUIC_Block", "AND,((NETWORK,UDP),(DST-PORT,443))")):
+                self.assertIn(f"  {name}:\n    type: inline\n    behavior: classical\n    payload:\n      - {payload}\n", text)
+        for path in (SYNC.TARGET, SYNC.CLIENT_TARGET):
+            text = (ROOT / path).read_text()
+            self.assertIn(SYNC.IPV6_BLOCK_RULESET, text)
+            self.assertIn(SYNC.QUIC_BLOCK_RULESET, text)
+            self.assertNotIn("[]AND,", text, "subconverter mangles inline logical conditions")
 
 
 
@@ -171,10 +278,21 @@ class ClientConfigTest(unittest.TestCase):
         self.assertNotIn("listen: 0.0.0.0", text)
         self.assertIn("tun:\n  enable: true", text)
         self.assertIn("    - any:53", text)
+        self.assertIn("    - tcp://any:53", text)
+        self.assertIn("  strict-route: true\n", text)
+        self.assertIn("  dns-mode: hijack\n", text)
+        self.assertIn("  inet6-address:\n    - fdfe:dcba:9876::1/126\n", text)
+        self.assertIn("\nipv6: true\n", text, "IPv6 must enter TUN before the reject guard can apply")
+        self.assertIn("\nipv6: false\n", SYNC.BASE_CONFIG_TEXT)
+        self.assertNotIn("\ntun:\n", SYNC.BASE_CONFIG_TEXT, "OpenClash owns its runtime interception mode")
         self.assertEqual((ROOT / SYNC.CLIENT_BASE_CONFIG).read_text(), text)
+        self.assertEqual((ROOT / SYNC.BASE_CONFIG).read_text(), SYNC.BASE_CONFIG_TEXT)
         router_dns = SYNC.BASE_CONFIG_TEXT.split("\ndns:\n", 1)[1]
         client_dns = text.split("\ndns:\n", 1)[1]
         self.assertEqual(client_dns, router_dns.replace("  listen: 0.0.0.0:7874\n", ""))
+        self.assertIn("  ipv6: false\n", client_dns)
+        self.assertIn("  respect-rules: true\n", client_dns)
+        self.assertIn("  enhanced-mode: fake-ip\n", client_dns)
 
 
 if __name__ == "__main__":

@@ -29,8 +29,13 @@ jobs:
           grep -q '^tun:' OC_Rules/Custom_Clash_Client_Base.yaml
           python3 .github/scripts/test_sync_oc_upstream.py
           grep -Fq 'include_remarks=(?i)^(?:US-RELAY|HK)-.+$' OC_Rules/Custom_Clash_Lite.ini
-          grep -Fq 'custom_proxy_group=🚀 手动选择`select`(?i)^US-RELAY-.+$`[]🎯 全球直连' OC_Rules/Custom_Clash_Lite.ini
-          grep -Fq 'custom_proxy_group=Polymarket 国际站`select`(?i)^HK-.+$' OC_Rules/Custom_Clash_Lite.ini
+          grep -Fq 'ruleset=REJECT,[]RULE-SET,Tutu_IPv6_Block' OC_Rules/Custom_Clash_Lite.ini
+          grep -Fq 'ruleset=REJECT,[]RULE-SET,Tutu_QUIC_Block' OC_Rules/Custom_Clash_Lite.ini
+          grep -q 'empty-fallback: REJECT' OC_Rules/Custom_Clash_Base.yaml
+          grep -q 'empty-fallback: REJECT' OC_Rules/Custom_Clash_Client_Base.yaml
+          grep -q '^ipv6: true' OC_Rules/Custom_Clash_Client_Base.yaml
+          grep -q 'dns-mode: hijack' OC_Rules/Custom_Clash_Client_Base.yaml
+          grep -q 'tcp://any:53' OC_Rules/Custom_Clash_Client_Base.yaml
           ! grep -Eq '自建优先|🔒 RELAY|9929|`fallback`' OC_Rules/Custom_Clash_{Lite,Client}.ini
           ! grep -q '机场自动' OC_Rules/Custom_Clash_Lite.ini
           ! grep -Eq '^custom_proxy_group=(♻️ 自动选择|🇺🇸 美国节点)' OC_Rules/Custom_Clash_Lite.ini
@@ -50,7 +55,10 @@ jobs:
           grep -q 'DOMAIN-SUFFIX,flashforge.com' OC_Rules/rule/AD5X_Classical.yaml
           ! grep -Eq '🇭🇰|🇯🇵|🇸🇬|🇼🇸|🇰🇷|香港节点|日本节点|新加坡节点|台湾节点|韩国节点' OC_Rules/Custom_Clash_Lite.ini
           ! grep -q '全部节点' OC_Rules/Custom_Clash_Lite.ini
-          ! grep -Eiq '广告|去广告|拦截|adblock|reject' OC_Rules/Custom_Clash_Lite.ini
+          if grep -Eiq '广告|去广告|拦截|adblock' OC_Rules/Custom_Clash_{Lite,Client}.ini; then
+            echo "Unexpected ad-filtering content in generated rules."
+            exit 1
+          fi
 
       - name: Commit rules if changed
         run: |

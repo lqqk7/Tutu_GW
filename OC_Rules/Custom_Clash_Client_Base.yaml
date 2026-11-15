@@ -2,7 +2,7 @@ mixed-port: 7893
 allow-lan: false
 mode: rule
 log-level: info
-ipv6: false
+ipv6: true
 unified-delay: true
 tcp-concurrent: true
 
@@ -10,13 +10,44 @@ profile:
   store-selected: true
   store-fake-ip: true
 
+proxy-groups:
+  - name: 🚀 手动选择
+    type: select
+    include-all-proxies: true
+    include-all-providers: true
+    filter: '(?i)^US-RELAY-.+$'
+    empty-fallback: REJECT
+  - name: Polymarket 国际站
+    type: select
+    include-all-proxies: true
+    include-all-providers: true
+    filter: '(?i)^HK-.+$'
+    empty-fallback: REJECT
+
+rule-providers:
+  Tutu_IPv6_Block:
+    type: inline
+    behavior: classical
+    payload:
+      - IP-CIDR6,::/0,no-resolve
+  Tutu_QUIC_Block:
+    type: inline
+    behavior: classical
+    payload:
+      - AND,((NETWORK,UDP),(DST-PORT,443))
+
 tun:
   enable: true
   stack: mixed
   auto-route: true
   auto-detect-interface: true
+  strict-route: true
+  dns-mode: hijack
+  inet6-address:
+    - fdfe:dcba:9876::1/126
   dns-hijack:
     - any:53
+    - tcp://any:53
 
 sniffer:
   enable: true
