@@ -30,24 +30,17 @@ POLYMARKET_RULES = Path("OC_Rules/source/Polymarket.list")
 POLYMARKET_PROVIDER = Path("OC_Rules/rule/Polymarket_Classical.yaml")
 POLYMARKET_GROUP = "Polymarket 国际站"
 POLYMARKET_RULESET = f"ruleset={POLYMARKET_GROUP},clash-classic:{RAW_BASE}/OC_Rules/rule/Polymarket_Classical.yaml,28800"
-POLYMARKET_PROXY_GROUP = f"custom_proxy_group={POLYMARKET_GROUP}`select`^HK-TUTUGW$"
+AI_RULESET = f"ruleset=🤖 AI服务,clash-classic:{RAW_BASE}/OC_Rules/rule/AI_Classical.yaml,28800"
+POLYMARKET_NODE_FILTER = r"(?i)^HK-.+$"
+POLYMARKET_PROXY_GROUP = f"custom_proxy_group={POLYMARKET_GROUP}`select`{POLYMARKET_NODE_FILTER}"
 
-INCLUDE_REMARKS_FILTER = r"(?i)(?:.*(?:RELAY|9929).*|^HK-TUTUGW$)"
+INCLUDE_REMARKS_FILTER = r"(?i)^(?:US-RELAY|HK)-.+$"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
-HEALTH_CHECK_URL = "https://www.gstatic.com/generate_204"
 
-SELF_HOSTED_GROUP_FILTER = r"(?i).*(?:RELAY|9929).*"
-SELF_HOSTED_RELAY_GROUP = "🔒 RELAY"
-SELF_HOSTED_9929_GROUP = "🔒 9929"
-SELF_HOSTED_PRIORITY = (SELF_HOSTED_RELAY_GROUP, SELF_HOSTED_9929_GROUP)
-SELF_HOSTED_PRIORITY_MEMBERS = "`".join(f"[]{name}" for name in SELF_HOSTED_PRIORITY)
-MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`[]🏠 自建优先`{SELF_HOSTED_GROUP_FILTER}`[]🎯 全球直连"
-SELF_HOSTED_FALLBACK_GROUP = f"custom_proxy_group=🏠 自建优先`fallback`{SELF_HOSTED_PRIORITY_MEMBERS}`{HEALTH_CHECK_URL}`300,,50"
-SELF_HOSTED_RELAY_PROVIDER_GROUP = f"custom_proxy_group={SELF_HOSTED_RELAY_GROUP}`select`(?i)^US-RELAY-TUTUGW$"
-SELF_HOSTED_9929_PROVIDER_GROUP = f"custom_proxy_group={SELF_HOSTED_9929_GROUP}`select`(?i)^US-9929-TUTUGW$"
+MANUAL_NODE_FILTER = r"(?i)^US-RELAY-.+$"
+MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`{MANUAL_NODE_FILTER}`[]🎯 全球直连"
 
 CUSTOM_RULESETS = [
-    f"ruleset=🤖 AI服务,clash-classic:{RAW_BASE}/OC_Rules/rule/AI_Classical.yaml,28800",
     f"ruleset=🖨️ AD5X切片,clash-classic:{RAW_BASE}/OC_Rules/rule/AD5X_Classical.yaml,28800",
     # WeChat picks upload servers via its HTTPDNS; resolving it abroad breaks image sends.
     f"ruleset=🎯 全球直连,clash-classic:{RAW_BASE}/OC_Rules/rule/CN_HTTPDNS_Classical.yaml,28800",
@@ -58,20 +51,17 @@ CUSTOM_RULESETS = [
 CUSTOM_PROXY_GROUPS = [
     POLYMARKET_PROXY_GROUP,
     MANUAL_GROUP,
-    SELF_HOSTED_FALLBACK_GROUP,
-    SELF_HOSTED_RELAY_PROVIDER_GROUP,
-    SELF_HOSTED_9929_PROVIDER_GROUP,
-    "custom_proxy_group=🤖 AI服务`select`[]🚀 手动选择`[]🏠 自建优先",
-    "custom_proxy_group=🖨️ AD5X切片`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
-    "custom_proxy_group=🚀 GitHub`select`[]🚀 手动选择`[]🏠 自建优先`[]🎯 全球直连",
-    "custom_proxy_group=📢 谷歌FCM`select`[]🚀 手动选择`[]🏠 自建优先`[]🎯 全球直连",
-    "custom_proxy_group=🇬 谷歌服务`select`[]🚀 手动选择`[]🏠 自建优先`[]🎯 全球直连",
-    "custom_proxy_group=🍎 苹果服务`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
-    "custom_proxy_group=Ⓜ️ 微软服务`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
-    "custom_proxy_group=🎮 游戏平台`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
-    "custom_proxy_group=🎮 Steam`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
-    "custom_proxy_group=🚀 测速工具`select`[]🎯 全球直连`[]🚀 手动选择`[]🏠 自建优先",
-    "custom_proxy_group=🐟 漏网之鱼`select`[]🚀 手动选择`[]🏠 自建优先`[]🎯 全球直连",
+    "custom_proxy_group=🤖 AI服务`select`[]🚀 手动选择",
+    "custom_proxy_group=🖨️ AD5X切片`select`[]🎯 全球直连`[]🚀 手动选择",
+    "custom_proxy_group=🚀 GitHub`select`[]🚀 手动选择`[]🎯 全球直连",
+    "custom_proxy_group=📢 谷歌FCM`select`[]🚀 手动选择`[]🎯 全球直连",
+    "custom_proxy_group=🇬 谷歌服务`select`[]🚀 手动选择`[]🎯 全球直连",
+    "custom_proxy_group=🍎 苹果服务`select`[]🎯 全球直连`[]🚀 手动选择",
+    "custom_proxy_group=Ⓜ️ 微软服务`select`[]🎯 全球直连`[]🚀 手动选择",
+    "custom_proxy_group=🎮 游戏平台`select`[]🎯 全球直连`[]🚀 手动选择",
+    "custom_proxy_group=🎮 Steam`select`[]🎯 全球直连`[]🚀 手动选择",
+    "custom_proxy_group=🚀 测速工具`select`[]🎯 全球直连`[]🚀 手动选择",
+    "custom_proxy_group=🐟 漏网之鱼`select`[]🚀 手动选择`[]🎯 全球直连",
     "custom_proxy_group=🔀 非标端口`select`[]🐟 漏网之鱼`[]🎯 全球直连",
     "custom_proxy_group=🎯 全球直连`select`[]DIRECT",
 ]
@@ -239,13 +229,13 @@ def insert_custom_rulesets(lines: list[str]) -> list[str]:
     return output
 
 
-def insert_polymarket_ruleset(lines: list[str]) -> list[str]:
+def insert_priority_rulesets(lines: list[str]) -> list[str]:
     # Private networks keep priority; service routing precedes every general rule.
     anchor = "ruleset=🎯 全球直连,[]GEOIP,private,no-resolve"
     if lines.count(anchor) != 1:
         raise RuntimeError("Expected one private-network ruleset anchor")
     index = lines.index(anchor) + 1
-    return [*lines[:index], POLYMARKET_RULESET, *lines[index:]]
+    return [*lines[:index], POLYMARKET_RULESET, AI_RULESET, *lines[index:]]
 
 
 def insert_base_config(lines: list[str]) -> list[str]:
@@ -300,6 +290,9 @@ def normalize_list_rule(line: str) -> str | None:
     if len(parts) < 2:
         return None
 
+    # Classical providers support no-resolve on IP rules; keep the source option.
+    if parts[0] in {"IP-CIDR", "IP-CIDR6"} and "no-resolve" in parts[2:]:
+        return ",".join([*parts[:2], "no-resolve"])
     return ",".join(parts[:2])
 
 
@@ -340,19 +333,9 @@ def write_base_config() -> None:
     CLIENT_BASE_CONFIG.write_text(CLIENT_BASE_CONFIG_TEXT, encoding="utf-8")
 
 
-# Client subscriptions use separate UUIDs and name nodes "-TUTU"; accept both suffixes.
-CLIENT_NODE_SUFFIX = "TUTU(?:GW)?"
+# Node filters use the shared US-RELAY-/HK- prefixes on both platforms.
 CLIENT_REPLACEMENTS = [
     (BASE_LINE, CLIENT_BASE_LINE),
-    *(
-        (line, line.replace("TUTUGW$", f"{CLIENT_NODE_SUFFIX}$"))
-        for line in (
-            INCLUDE_REMARKS,
-            POLYMARKET_PROXY_GROUP,
-            SELF_HOSTED_RELAY_PROVIDER_GROUP,
-            SELF_HOSTED_9929_PROVIDER_GROUP,
-        )
-    ),
 ]
 
 
@@ -371,9 +354,9 @@ def validate_generated(text: str, replacements: list[tuple[str, str]] = []) -> N
         INCLUDE_REMARKS,
         *CUSTOM_RULESETS,
         POLYMARKET_RULESET,
+        AI_RULESET,
         POLYMARKET_PROXY_GROUP,
         MANUAL_GROUP,
-        SELF_HOSTED_FALLBACK_GROUP,
         "ruleset=🤖 AI服务,clash-classic:",
         "ruleset=🖨️ AD5X切片,clash-classic:",
         "enable_rule_generator=true",
@@ -403,13 +386,16 @@ def validate_generated(text: str, replacements: list[tuple[str, str]] = []) -> N
     if "机场自动" in text:
         raise RuntimeError("Airport proxy group remains")
 
+    if any(legacy in text for legacy in ("自建优先", "🔒 RELAY", "9929", "`fallback`")):
+        raise RuntimeError("Retired proxy groups remain")
+
 
 def main() -> int:
     upstream = fetch_text(UPSTREAM_URL)
     lines = [line.rstrip() for line in upstream.replace("\r\n", "\n").splitlines()]
     lines = insert_base_config(lines)
     lines = insert_custom_rulesets(lines)
-    lines = insert_polymarket_ruleset(lines)
+    lines = insert_priority_rulesets(lines)
     lines = replace_proxy_groups(lines)
     output = "\n".join(lines).rstrip() + "\n"
     validate_generated(output)

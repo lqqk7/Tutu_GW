@@ -44,74 +44,55 @@ class RulesetAnchorTest(unittest.TestCase):
 
 
 class NodeFilterTest(unittest.TestCase):
-    def test_manual_group_uses_one_combined_filter(self):
-        self.assertEqual(
-            SYNC.SELF_HOSTED_GROUP_FILTER,
-            r"(?i).*(?:RELAY|9929).*",
-        )
-        self.assertEqual(SYNC.MANUAL_GROUP.count(SYNC.SELF_HOSTED_GROUP_FILTER), 1)
-        self.assertNotIn("`(?i).*9929.*`", SYNC.MANUAL_GROUP)
-
-    def test_self_hosted_fallback_has_fixed_priority(self):
-        self.assertEqual(
-            SYNC.SELF_HOSTED_PRIORITY,
-            (SYNC.SELF_HOSTED_RELAY_GROUP, SYNC.SELF_HOSTED_9929_GROUP),
-        )
-        relay = SYNC.SELF_HOSTED_FALLBACK_GROUP.index(f"[]{SYNC.SELF_HOSTED_RELAY_GROUP}")
-        fallback = SYNC.SELF_HOSTED_FALLBACK_GROUP.index(f"[]{SYNC.SELF_HOSTED_9929_GROUP}")
-        self.assertLess(relay, fallback)
-        self.assertNotIn(SYNC.SELF_HOSTED_GROUP_FILTER, SYNC.SELF_HOSTED_FALLBACK_GROUP)
-        self.assertNotIn("[]US-RELAY-TUTUGW", SYNC.SELF_HOSTED_FALLBACK_GROUP)
-        self.assertNotIn("[]US-9929-TUTUGW", SYNC.SELF_HOSTED_FALLBACK_GROUP)
-
-    def test_priority_helpers_filter_provider_nodes(self):
-        self.assertIn("(?i)^US-RELAY-TUTUGW$", SYNC.SELF_HOSTED_RELAY_PROVIDER_GROUP)
-        self.assertIn("(?i)^US-9929-TUTUGW$", SYNC.SELF_HOSTED_9929_PROVIDER_GROUP)
-        self.assertIn(SYNC.SELF_HOSTED_RELAY_PROVIDER_GROUP, SYNC.CUSTOM_PROXY_GROUPS)
-        self.assertIn(SYNC.SELF_HOSTED_9929_PROVIDER_GROUP, SYNC.CUSTOM_PROXY_GROUPS)
-
-    def test_only_existing_self_hosted_and_exact_polymarket_node_are_included(self):
+    def test_only_relay_and_hk_prefixes_are_included(self):
         pattern = re.compile(SYNC.INCLUDE_REMARKS_FILTER)
+        for suffix in ("TUTUGW", "TUTU", "xxxx", "new-node-2"):
+            for prefix in ("US-RELAY", "HK"):
+                node = f"{prefix}-{suffix}"
+                self.assertIsNotNone(pattern.search(node), node)
+        self.assertIsNotNone(pattern.search("us-relay-example"))
+        for node in ("US-9929-TUTUGW", "US-4837-TUTU", "Premium-RELAY-01",
+                     "XHK-TUTU", "RELAY-TUTU", "HK-", "US-RELAY-", "机场节点"):
+            self.assertIsNone(pattern.search(node), node)
 
-        for name in (
-            "US-9929v3-TUTUGW",
-            "US-9929v4-TUTUGW",
-            "US-relay-TUTUGW",
-            "🇺🇸 Premium-RELAY-01",
-            "HK-TUTUGW",
-        ):
-            self.assertIsNotNone(pattern.fullmatch(name), name)
+    def test_hk_is_exclusive_to_polymarket(self):
+        for suffix in ("TUTUGW", "TUTU", "xxxx", "new-node-2"):
+            for prefix, expected in (("HK", SYNC.POLYMARKET_GROUP),
+                                     ("US-RELAY", "🚀 手动选择")):
+                node = f"{prefix}-{suffix}"
+                matched = []
+                for group in SYNC.CUSTOM_PROXY_GROUPS:
+                    filters = [part for part in group.split("`")[2:]
+                               if part.startswith(("(?i)", "^"))]
+                    if any(re.search(pattern, node) for pattern in filters):
+                        matched.append(group.split("`")[0].removeprefix("custom_proxy_group="))
+                self.assertEqual(matched, [expected], node)
+        self.assertNotIn(f"[]{SYNC.POLYMARKET_GROUP}", "\n".join(SYNC.CUSTOM_PROXY_GROUPS))
 
-        for name in ("US-4837v2-TUTUGW", "美国-专线-AI", "机场节点", "HK-TUTUGW-2", "XHK-TUTUGW", "HK-TUTU"):
-            self.assertIsNone(pattern.fullmatch(name), name)
-
-    def test_polymarket_node_is_isolated(self):
-        nodes = ["HK-TUTUGW", "HK-TUTU", "HK-TUTUGW-2", "US-RELAY-TUTUGW", "US-9929-TUTUGW"]
+    def test_legacy_groups_are_removed_and_references_resolve(self):
         groups = SYNC.CUSTOM_PROXY_GROUPS
-        for node in nodes:
-            matched = []
-            for group in groups:
-                filters = [part for part in group.split("`")[2:] if part.startswith(("(?i)", "^"))]
-                if any(re.search(pattern, node) for pattern in filters):
-                    matched.append(group.split("`")[0])
-            if node == "HK-TUTUGW":
-                self.assertEqual(matched, [f"custom_proxy_group={SYNC.POLYMARKET_GROUP}"])
-            elif node.startswith("HK-"):
-                self.assertEqual(matched, [])
-        self.assertNotIn(f"[]{SYNC.POLYMARKET_GROUP}", "\n".join(groups))
+        text = "\n".join(groups)
+        for legacy in ("自建优先", "9929", "🔒 RELAY", "`fallback`", "机场自动"):
+            self.assertNotIn(legacy, text)
+        names = {line.split("`")[0].removeprefix("custom_proxy_group=") for line in groups}
+        for line in groups:
+            for part in line.split("`")[2:]:
+                if part.startswith("[]"):
+                    self.assertIn(part[2:], names | {"DIRECT"})
+        self.assertTrue(SYNC.MANUAL_GROUP.endswith("`[]🎯 全球直连"))
 
-    def test_polymarket_precedes_general_rules(self):
+    def test_service_rules_precede_general_rules(self):
         anchor = "ruleset=🎯 全球直连,[]GEOIP,private,no-resolve"
         general = "ruleset=🚀 手动选择,[]GEOSITE,gfw"
-        result = SYNC.insert_polymarket_ruleset([anchor, general])
-        self.assertEqual(result, [anchor, SYNC.POLYMARKET_RULESET, general])
+        result = SYNC.insert_priority_rulesets([anchor, general])
+        self.assertEqual(result, [anchor, SYNC.POLYMARKET_RULESET, SYNC.AI_RULESET, general])
         with self.assertRaises(RuntimeError):
-            SYNC.insert_polymarket_ruleset([general])
+            SYNC.insert_priority_rulesets([general])
         with self.assertRaises(RuntimeError):
-            SYNC.insert_polymarket_ruleset([anchor, anchor])
+            SYNC.insert_priority_rulesets([anchor, anchor])
         config = (ROOT / "OC_Rules/Custom_Clash_Lite.ini").read_text()
         rulesets = [line for line in config.splitlines() if line.startswith("ruleset=")]
-        self.assertEqual(rulesets[2], SYNC.POLYMARKET_RULESET)
+        self.assertEqual(rulesets[2:4], [SYNC.POLYMARKET_RULESET, SYNC.AI_RULESET])
         self.assertIn(SYNC.POLYMARKET_PROXY_GROUP, config)
 
     def test_polymarket_provider_matches_source(self):
@@ -135,30 +116,36 @@ class NodeFilterTest(unittest.TestCase):
                      "other.s3.us-east-2.amazonaws.com", "preview.polymarket.sh"):
             self.assertFalse(matches(host), host)
 
-    def test_airport_configuration_is_removed(self):
-        self.assertFalse(hasattr(SYNC, "AIRPORT_NODE_FILTER"))
-        self.assertFalse(hasattr(SYNC, "AIRPORT_AUTO_GROUP"))
-        self.assertNotIn("机场自动", SYNC.MANUAL_GROUP)
-        self.assertNotIn("机场自动", SYNC.SELF_HOSTED_FALLBACK_GROUP)
-
-    def test_self_hosted_group_uses_gstatic_health_check(self):
-        self.assertEqual(
-            SYNC.HEALTH_CHECK_URL,
-            "https://www.gstatic.com/generate_204",
-        )
-        self.assertIn(SYNC.HEALTH_CHECK_URL, SYNC.SELF_HOSTED_FALLBACK_GROUP)
-        self.assertNotIn("cp.cloudflare.com", SYNC.SELF_HOSTED_FALLBACK_GROUP)
-
-    def test_local_config_uses_the_shared_filter(self):
-        config = (ROOT / "OC_Rules/Custom_Clash_Lite.ini").read_text()
-
+    def test_local_config_uses_shared_groups(self):
+        config = (ROOT / SYNC.TARGET).read_text()
         self.assertIn(SYNC.INCLUDE_REMARKS, config)
-        self.assertIn(
-            SYNC.MANUAL_GROUP,
-            config,
-        )
-        self.assertIn(SYNC.SELF_HOSTED_FALLBACK_GROUP, config)
-        self.assertNotIn("机场自动", config)
+        for group in SYNC.CUSTOM_PROXY_GROUPS:
+            self.assertIn(group, config)
+        SYNC.validate_generated(config)
+
+
+class AIProviderTest(unittest.TestCase):
+    def test_provider_preserves_source_rules_and_no_resolve(self):
+        source = list(dict.fromkeys(rule for line in (ROOT / SYNC.AI_RULES).read_text().splitlines()
+                                   if (rule := SYNC.normalize_list_rule(line))))
+        provider = (ROOT / SYNC.AI_PROVIDER).read_text().splitlines()[1:]
+        self.assertEqual(provider, [f"  - {rule}" for rule in source])
+        for rule in ("DOMAIN-SUFFIX,claudemcpcontent.com",
+                     "DOMAIN,http-intake.logs.us5.datadoghq.com",
+                     "DOMAIN-SUFFIX,withpersona.com", "DOMAIN-SUFFIX,frompersona.com",
+                     "IP-CIDR,160.79.104.0/23,no-resolve",
+                     "IP-CIDR,153.61.224.0/22,no-resolve",
+                     "IP-CIDR6,2607:6bc0::/48,no-resolve"):
+            self.assertIn(rule, source)
+        self.assertFalse(any("160.79.104.0/21" in rule or "2607:6bc0::/32" in rule for rule in source))
+        self.assertFalse(any(rule.startswith("DOMAIN-KEYWORD," + keyword)
+                             for rule in source for keyword in ("sentry", "sift", "datadog")))
+
+    def test_ip_options_survive_normalization(self):
+        for rule in ("IP-CIDR,160.79.104.0/23,no-resolve",
+                     "IP-CIDR6,2607:6bc0::/48,no-resolve"):
+            self.assertEqual(SYNC.normalize_list_rule(rule + " # note"), rule)
+        self.assertIsNone(SYNC.normalize_list_rule("# comment"))
 
 
 
@@ -169,30 +156,14 @@ class ClientConfigTest(unittest.TestCase):
         self.assertEqual(client, SYNC.build_client_config(router))
         self.assertIn(SYNC.CLIENT_BASE_LINE, client)
         self.assertNotIn(SYNC.BASE_LINE, client)
-        self.assertNotIn("TUTUGW$", client)
 
-    def test_client_groups_accept_both_node_suffixes(self):
-        client = (ROOT / SYNC.CLIENT_TARGET).read_text().splitlines()
-        include = next(line for line in client if line.startswith("include_remarks="))
-        include_pattern = re.compile(include.removeprefix("include_remarks="))
-        groups = [line for line in client if line.startswith("custom_proxy_group=")]
-
-        def matched(node):
-            names = []
-            for group in groups:
-                filters = [part for part in group.split("`")[2:] if part.startswith(("(?i)", "^"))]
-                if any(re.search(pattern, node) for pattern in filters):
-                    names.append(group.split("`")[0].removeprefix("custom_proxy_group="))
-            return names
-
-        for suffix in ("TUTU", "TUTUGW"):
-            for node in (f"US-RELAY-{suffix}", f"US-9929-{suffix}", f"HK-{suffix}"):
-                self.assertIsNotNone(include_pattern.fullmatch(node), node)
-            self.assertIn(SYNC.SELF_HOSTED_RELAY_GROUP, matched(f"US-RELAY-{suffix}"))
-            self.assertIn(SYNC.SELF_HOSTED_9929_GROUP, matched(f"US-9929-{suffix}"))
-            self.assertEqual(matched(f"HK-{suffix}"), [SYNC.POLYMARKET_GROUP])
-        for node in ("HK-TUTU-2", "XHK-TUTU", "HK-TUTUG", "US-4837v2-TUTU"):
-            self.assertIsNone(include_pattern.fullmatch(node), node)
+    def test_client_and_router_use_identical_node_filters(self):
+        for path in (SYNC.TARGET, SYNC.CLIENT_TARGET):
+            config = (ROOT / path).read_text().splitlines()
+            include = next(line for line in config if line.startswith("include_remarks="))
+            groups = [line for line in config if line.startswith("custom_proxy_group=")]
+            self.assertEqual(include, SYNC.INCLUDE_REMARKS)
+            self.assertEqual(groups, SYNC.CUSTOM_PROXY_GROUPS)
 
     def test_client_base_drops_gateway_settings(self):
         text = SYNC.CLIENT_BASE_CONFIG_TEXT
