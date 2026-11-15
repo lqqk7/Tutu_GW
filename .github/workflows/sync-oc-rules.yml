@@ -29,10 +29,10 @@ jobs:
           grep -q '^tun:' OC_Rules/Custom_Clash_Client_Base.yaml
           python3 .github/scripts/test_sync_oc_upstream.py
           grep -Fq 'include_remarks=(?i)^(?:US-RELAY|HK)-.+$' OC_Rules/Custom_Clash_Lite.ini
-          grep -Fq 'ruleset=REJECT,[]RULE-SET,Tutu_IPv6_Block' OC_Rules/Custom_Clash_Lite.ini
-          grep -Fq 'ruleset=REJECT,[]RULE-SET,Tutu_QUIC_Block' OC_Rules/Custom_Clash_Lite.ini
-          grep -q 'empty-fallback: REJECT' OC_Rules/Custom_Clash_Base.yaml
-          grep -q 'empty-fallback: REJECT' OC_Rules/Custom_Clash_Client_Base.yaml
+          grep -Fq 'ruleset=REJECT,[]IP-CIDR6,::/0,no-resolve' OC_Rules/Custom_Clash_Lite.ini
+          grep -Fq 'ruleset=REJECT,[]AND,((NETWORK,UDP),(DST-PORT,443))' OC_Rules/Custom_Clash_Lite.ini
+          grep -Fq 'custom_proxy_group=🚀 手动选择`select`(?i)^US-RELAY-.+$`[]REJECT' OC_Rules/Custom_Clash_Lite.ini
+          grep -Fq 'custom_proxy_group=Polymarket 国际站`select`(?i)^HK-.+$`[]REJECT' OC_Rules/Custom_Clash_Lite.ini
           grep -q '^ipv6: true' OC_Rules/Custom_Clash_Client_Base.yaml
           grep -q 'dns-mode: hijack' OC_Rules/Custom_Clash_Client_Base.yaml
           grep -q 'tcp://any:53' OC_Rules/Custom_Clash_Client_Base.yaml

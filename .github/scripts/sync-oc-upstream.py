@@ -32,20 +32,18 @@ POLYMARKET_GROUP = "Polymarket 国际站"
 POLYMARKET_RULESET = f"ruleset={POLYMARKET_GROUP},clash-classic:{RAW_BASE}/OC_Rules/rule/Polymarket_Classical.yaml,28800"
 AI_RULESET = f"ruleset=🤖 AI服务,clash-classic:{RAW_BASE}/OC_Rules/rule/AI_Classical.yaml,28800"
 POLYMARKET_NODE_FILTER = r"(?i)^HK-.+$"
+POLYMARKET_PROXY_GROUP = f"custom_proxy_group={POLYMARKET_GROUP}`select`{POLYMARKET_NODE_FILTER}`[]REJECT"
 
 INCLUDE_REMARKS_FILTER = r"(?i)^(?:US-RELAY|HK)-.+$"
 INCLUDE_REMARKS = f"include_remarks={INCLUDE_REMARKS_FILTER}"
 
 MANUAL_NODE_FILTER = r"(?i)^US-RELAY-.+$"
+MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`{MANUAL_NODE_FILTER}`[]REJECT"
 
-# Native groups preserve provider filtering and reject empty subscriptions without
-# adding a static REJECT member ahead of the provider's actual nodes.
-PROTECTED_GROUPS = {
-    "🚀 手动选择": MANUAL_NODE_FILTER,
-    POLYMARKET_GROUP: POLYMARKET_NODE_FILTER,
-}
-IPV6_BLOCK_RULESET = "ruleset=REJECT,[]RULE-SET,Tutu_IPv6_Block"
-QUIC_BLOCK_RULESET = "ruleset=REJECT,[]RULE-SET,Tutu_QUIC_Block"
+# api.asailor.org drops native base groups and cannot accept inline providers.
+# Its converter preserves these literal rules, including the complete AND.
+IPV6_BLOCK_RULESET = "ruleset=REJECT,[]IP-CIDR6,::/0,no-resolve"
+QUIC_BLOCK_RULESET = "ruleset=REJECT,[]AND,((NETWORK,UDP),(DST-PORT,443))"
 
 CUSTOM_RULESETS = [
     f"ruleset=🖨️ AD5X切片,clash-classic:{RAW_BASE}/OC_Rules/rule/AD5X_Classical.yaml,28800",
@@ -56,6 +54,8 @@ CUSTOM_RULESETS = [
 ]
 
 CUSTOM_PROXY_GROUPS = [
+    POLYMARKET_PROXY_GROUP,
+    MANUAL_GROUP,
     "custom_proxy_group=🤖 AI服务`select`[]🚀 手动选择",
     "custom_proxy_group=🖨️ AD5X切片`select`[]🎯 全球直连`[]🚀 手动选择",
     "custom_proxy_group=🚀 GitHub`select`[]🚀 手动选择`[]🎯 全球直连",
@@ -104,32 +104,6 @@ tcp-concurrent: true
 profile:
   store-selected: true
   store-fake-ip: true
-
-proxy-groups:
-  - name: 🚀 手动选择
-    type: select
-    include-all-proxies: true
-    include-all-providers: true
-    filter: '(?i)^US-RELAY-.+$'
-    empty-fallback: REJECT
-  - name: Polymarket 国际站
-    type: select
-    include-all-proxies: true
-    include-all-providers: true
-    filter: '(?i)^HK-.+$'
-    empty-fallback: REJECT
-
-rule-providers:
-  Tutu_IPv6_Block:
-    type: inline
-    behavior: classical
-    payload:
-      - IP-CIDR6,::/0,no-resolve
-  Tutu_QUIC_Block:
-    type: inline
-    behavior: classical
-    payload:
-      - AND,((NETWORK,UDP),(DST-PORT,443))
 
 sniffer:
   enable: true
@@ -411,6 +385,8 @@ def validate_generated(text: str, replacements: list[tuple[str, str]] = []) -> N
         *CUSTOM_RULESETS,
         POLYMARKET_RULESET,
         AI_RULESET,
+        POLYMARKET_PROXY_GROUP,
+        MANUAL_GROUP,
         IPV6_BLOCK_RULESET,
         QUIC_BLOCK_RULESET,
         "ruleset=🤖 AI服务,clash-classic:",
@@ -436,12 +412,9 @@ def validate_generated(text: str, replacements: list[tuple[str, str]] = []) -> N
     # Only our explicit security guards may reject. Upstream ad filtering is
     # still removed before guards are inserted.
     if any(is_forbidden_line(line) for line in text.splitlines()
-           if not line.startswith("ruleset=REJECT,")):
+           if not line.startswith("ruleset=REJECT,")
+           and line not in {MANUAL_GROUP, POLYMARKET_PROXY_GROUP}):
         raise RuntimeError("Forbidden ad-block/reject content remains")
-
-    if any(line.startswith(f"custom_proxy_group={group}`")
-           for group in PROTECTED_GROUPS for line in text.splitlines()):
-        raise RuntimeError("Native fail-closed groups must not be replaced by converter groups")
 
     if "全部节点" in text:
         raise RuntimeError("Redundant all-nodes group remains")
