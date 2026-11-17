@@ -44,6 +44,8 @@ MANUAL_GROUP = f"custom_proxy_group=🚀 手动选择`select`{MANUAL_NODE_FILTER
 # Its converter preserves these literal rules, including the complete AND.
 IPV6_BLOCK_RULESET = "ruleset=REJECT,[]IP-CIDR6,::/0,no-resolve"
 QUIC_BLOCK_RULESET = "ruleset=REJECT,[]AND,((NETWORK,UDP),(DST-PORT,443))"
+# Mainland IPv6 stays direct: cellular WeChat CDN uploads use IPv6 and break under the blanket block.
+CN_IPV6_DIRECT_RULESET = "ruleset=🎯 全球直连,[]AND,((IP-CIDR6,::/0,no-resolve),(GEOIP,CN,no-resolve))"
 
 CUSTOM_RULESETS = [
     f"ruleset=🖨️ AD5X切片,clash-classic:{RAW_BASE}/OC_Rules/rule/AD5X_Classical.yaml,28800",
@@ -251,7 +253,7 @@ def insert_priority_rulesets(lines: list[str]) -> list[str]:
     output = [*lines[:index], QUIC_BLOCK_RULESET, POLYMARKET_RULESET, AI_RULESET, *lines[index:]]
     # IPv6 must be blocked even when its destination belongs to a private range.
     first_rule = next(i for i, line in enumerate(output) if line.startswith("ruleset="))
-    output.insert(first_rule, IPV6_BLOCK_RULESET)
+    output[first_rule:first_rule] = [CN_IPV6_DIRECT_RULESET, IPV6_BLOCK_RULESET]
     return output
 
 

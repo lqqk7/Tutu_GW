@@ -138,7 +138,7 @@ class NodeFilterTest(unittest.TestCase):
         anchor = "ruleset=🎯 全球直连,[]GEOIP,private,no-resolve"
         general = "ruleset=🚀 手动选择,[]GEOSITE,gfw"
         result = SYNC.insert_priority_rulesets([anchor, general])
-        self.assertEqual(result, [SYNC.IPV6_BLOCK_RULESET, anchor, SYNC.QUIC_BLOCK_RULESET,
+        self.assertEqual(result, [SYNC.CN_IPV6_DIRECT_RULESET, SYNC.IPV6_BLOCK_RULESET, anchor, SYNC.QUIC_BLOCK_RULESET,
                                   SYNC.POLYMARKET_RULESET, SYNC.AI_RULESET, general])
         with self.assertRaises(RuntimeError):
             SYNC.insert_priority_rulesets([general])
@@ -146,7 +146,7 @@ class NodeFilterTest(unittest.TestCase):
             SYNC.insert_priority_rulesets([anchor, anchor])
         for path in (SYNC.TARGET, SYNC.CLIENT_TARGET):
             rules = rulesets((ROOT / path).read_text())
-            self.assertEqual(rules[0], SYNC.IPV6_BLOCK_RULESET)
+            self.assertEqual(rules[:2], [SYNC.CN_IPV6_DIRECT_RULESET, SYNC.IPV6_BLOCK_RULESET])
             self.assertLess(rules.index(anchor), rules.index(SYNC.QUIC_BLOCK_RULESET))
             self.assertLess(rules.index(SYNC.QUIC_BLOCK_RULESET), rules.index(SYNC.POLYMARKET_RULESET))
             self.assertLess(rules.index(SYNC.POLYMARKET_RULESET), rules.index(SYNC.AI_RULESET))
